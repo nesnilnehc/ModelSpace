@@ -2,6 +2,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+![ModelSpace – 认知模型三维坐标系](docs/assets/modelspace-promo.png)
+
 A frontend-only 3D visualization of cognitive models, mapping them along **X (time-orientation) × Y (control depth) × Z (abstraction level)**. Browse, filter, and inspect model details in an interactive Three.js scene.
 
 ---
