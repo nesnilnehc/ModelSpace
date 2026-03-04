@@ -138,7 +138,12 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-document.body.appendChild(renderer.domElement);
+renderer.domElement.style.position = "fixed";
+renderer.domElement.style.inset = "0";
+renderer.domElement.style.zIndex = "0";
+renderer.domElement.style.touchAction = "none";
+const overlayEl = document.getElementById("overlay");
+document.body.insertBefore(renderer.domElement, overlayEl || document.body.firstChild);
 
 const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(98, 90, 98);
@@ -181,6 +186,15 @@ let pointerFrameQueued = false;
 
 buildStarField();
 buildNodes();
+
+const isMobile = window.matchMedia("(max-width: 768px)").matches;
+if (isMobile) {
+  toolbarHidden = true;
+  infoHidden = true;
+  setToolbarHidden(true);
+  setInfoHidden(true);
+}
+
 applyUILanguage();
 rebuildLinks();
 
@@ -912,7 +926,9 @@ function applyUILanguage() {
   if (viewYAxisBtn) viewYAxisBtn.textContent = t.viewYAxisText;
   if (viewZAxisBtn) viewZAxisBtn.textContent = t.viewZAxisText;
   visualSwitchTitle.textContent = t.visualSwitchTitle;
-  legendText.textContent = t.legendText;
+  legendText.textContent = window.matchMedia("(max-width: 768px)").matches
+    ? (t.legendTextMobile ?? t.legendText)
+    : t.legendText;
   modelPanelTitle.textContent = t.modelPanelTitle;
   updateDetailCoordToggleButton();
   if (detailExpandAllBtn) detailExpandAllBtn.textContent = t.detailExpandAllText;
@@ -1579,9 +1595,12 @@ function fitCameraToCognitiveSpace() {
 }
 
 function updatePointer(event) {
+  const t = event.touches?.length ? event.touches[0] : event.changedTouches?.length ? event.changedTouches[0] : event;
+  const clientX = t.clientX ?? event.clientX;
+  const clientY = t.clientY ?? event.clientY;
   const rect = renderer.domElement.getBoundingClientRect();
-  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
 }
 
 function showTooltip(x, y, text) {
