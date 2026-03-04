@@ -66,6 +66,8 @@ const neighborToggle = document.getElementById("neighborToggle");
 const toolbarToggleBtn = document.getElementById("toolbarToggleBtn");
 const detailToggleBtn = document.getElementById("detailToggleBtn");
 const fullscreenToggleBtn = document.getElementById("fullscreenToggleBtn");
+const dockExpandBtn = document.getElementById("dockExpandBtn");
+const viewDock = document.querySelector(".view-dock");
 const overviewModeBtn = document.getElementById("overviewModeBtn");
 const viewResetBtn = document.getElementById("viewResetBtn");
 const viewXAxisBtn = document.getElementById("viewXAxisBtn");
@@ -309,6 +311,9 @@ detailCollapseAllBtn?.addEventListener("click", () => {
 });
 fullscreenToggleBtn.addEventListener("click", () => {
   toggleFullscreen();
+});
+dockExpandBtn?.addEventListener("click", () => {
+  viewDock?.classList.toggle("dock-expanded");
 });
 overviewModeBtn?.addEventListener("click", () => {
   enterOverviewMode({ resetCamera: true });

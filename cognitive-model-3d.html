@@ -75,6 +75,14 @@
       pointer-events: auto;
     }
 
+    .dock-expand-btn {
+      display: none;
+    }
+
+    .dock-body {
+      display: contents;
+    }
+
     .dock-group {
       display: inline-flex;
       align-items: center;
@@ -916,7 +924,7 @@
 
     @media (max-width: 768px) {
       #overlay {
-        padding-top: max(96px, calc(96px + env(safe-area-inset-top, 0px)));
+        padding-top: max(56px, calc(56px + env(safe-area-inset-top, 0px)));
       }
 
       .panel {
@@ -925,6 +933,32 @@
 
       .view-dock {
         padding: 6px 8px;
+      }
+
+      .dock-expand-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        padding: 6px 10px;
+        flex: none;
+      }
+
+      .dock-body {
+        display: none;
+        width: 100%;
+      }
+
+      .view-dock.dock-expanded .dock-body {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .view-dock.dock-expanded {
+        flex-wrap: wrap;
       }
     }
 
@@ -1056,24 +1090,27 @@
   </div>
 
   <div class="view-dock" aria-label="View controls">
-    <div class="dock-group">
-      <div class="global-language" aria-label="Language switch">
-        <span id="languageFinderText" class="language-finder">Language / 语言</span>
-        <div class="language-buttons">
-          <button type="button" class="lang-btn active" data-ui-lang="zh">中文</button>
-          <button type="button" class="lang-btn" data-ui-lang="en">English</button>
+    <button id="dockExpandBtn" type="button" class="view-btn dock-expand-btn" aria-label="展开工具栏">☰</button>
+    <div class="dock-body">
+      <div class="dock-group">
+        <div class="global-language" aria-label="Language switch">
+          <span id="languageFinderText" class="language-finder">Language / 语言</span>
+          <div class="language-buttons">
+            <button type="button" class="lang-btn active" data-ui-lang="zh">中文</button>
+            <button type="button" class="lang-btn" data-ui-lang="en">English</button>
+          </div>
         </div>
+        <button id="overviewModeBtn" type="button" class="view-btn">概览模式</button>
+        <button id="viewResetBtn" type="button" class="view-btn">默认视角</button>
+        <button id="viewXAxisBtn" type="button" class="view-btn">沿 X 轴看</button>
+        <button id="viewYAxisBtn" type="button" class="view-btn">沿 Y 轴看</button>
+        <button id="viewZAxisBtn" type="button" class="view-btn">沿 Z 轴看</button>
       </div>
-      <button id="overviewModeBtn" type="button" class="view-btn">概览模式</button>
-      <button id="viewResetBtn" type="button" class="view-btn">默认视角</button>
-      <button id="viewXAxisBtn" type="button" class="view-btn">沿 X 轴看</button>
-      <button id="viewYAxisBtn" type="button" class="view-btn">沿 Y 轴看</button>
-      <button id="viewZAxisBtn" type="button" class="view-btn">沿 Z 轴看</button>
-    </div>
-    <div class="dock-group dock-actions">
-      <button id="toolbarToggleBtn" type="button" class="view-btn">隐藏工具栏</button>
-      <button id="detailToggleBtn" type="button" class="view-btn">隐藏详情</button>
-      <button id="fullscreenToggleBtn" type="button" class="view-btn">进入全屏</button>
+      <div class="dock-group dock-actions">
+        <button id="toolbarToggleBtn" type="button" class="view-btn">隐藏工具栏</button>
+        <button id="detailToggleBtn" type="button" class="view-btn">隐藏详情</button>
+        <button id="fullscreenToggleBtn" type="button" class="view-btn">进入全屏</button>
+      </div>
     </div>
   </div>
 
