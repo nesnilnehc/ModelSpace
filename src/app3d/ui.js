@@ -78,6 +78,7 @@ export function getDetailSectionSummary(modelContent) {
 export function renderModelDetailsContent(modelContent, payload) {
   const {
     displayName,
+    summaryLine,
     overviewTitle,
     overviewRows,
     descriptionTitle,
@@ -101,6 +102,13 @@ export function renderModelDetailsContent(modelContent, payload) {
   title.className = "model-name";
   title.textContent = displayName;
   modelContent.appendChild(title);
+
+  if (summaryLine && String(summaryLine).trim()) {
+    const summary = document.createElement("p");
+    summary.className = "model-summary";
+    summary.textContent = summaryLine.trim();
+    modelContent.appendChild(summary);
+  }
 
   let accordionId = 0;
   const fallbackNone = detailNoneText || "-";
@@ -181,14 +189,18 @@ export function renderModelDetailsContent(modelContent, payload) {
     panel.appendChild(overviewGrid);
   });
 
-  appendAccordionSection(descriptionTitle, { expanded: true, className: "definition-card" }, (panel) => {
+  if (descriptionText && String(descriptionText).trim() && descriptionText.trim() !== (detailNoneText || "-")) {
+    appendAccordionSection(descriptionTitle, { expanded: false, className: "definition-card" }, (panel) => {
     const definitionText = document.createElement("p");
     definitionText.className = "definition-text";
     definitionText.textContent = descriptionText || fallbackEmpty;
     panel.appendChild(definitionText);
   });
+  }
 
-  appendAccordionSection(judgementTitle, { expanded: false }, (panel) => {
+  const hasJudgement = judgementStatus || (judgementRows && judgementRows.length > 0);
+  if (hasJudgement) {
+    appendAccordionSection(judgementTitle, { expanded: false }, (panel) => {
     if (judgementStatus) {
       const statusRow = document.createElement("div");
       statusRow.className = "explain-status-row";
@@ -229,8 +241,12 @@ export function renderModelDetailsContent(modelContent, payload) {
     }
     panel.appendChild(detailGrid);
   });
+  }
 
-  appendAccordionSection(referenceTitle, { expanded: true, className: "resource-card" }, (panel) => {
+  const hasReferenceContent = (referenceSections && referenceSections.some((s) => s.items && s.items.length > 0)) ||
+    (referenceLinks && referenceLinks.length > 0);
+  if (hasReferenceContent) {
+    appendAccordionSection(referenceTitle, { expanded: false, className: "resource-card" }, (panel) => {
     const sections = referenceSections || [];
     if (!sections.length && (!referenceLinks || !referenceLinks.length)) {
       const empty = document.createElement("div");
@@ -241,6 +257,8 @@ export function renderModelDetailsContent(modelContent, payload) {
     }
 
     for (const section of sections) {
+      if (!section.items || section.items.length === 0) continue;
+
       const sectionEl = document.createElement("div");
       sectionEl.className = "resource-section";
 
@@ -248,15 +266,6 @@ export function renderModelDetailsContent(modelContent, payload) {
       label.className = "explain-key";
       label.textContent = section.label;
       sectionEl.appendChild(label);
-
-      if (!section.items || section.items.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "explain-value";
-        empty.textContent = section.emptyText || fallbackEmpty;
-        sectionEl.appendChild(empty);
-        panel.appendChild(sectionEl);
-        continue;
-      }
 
       const list = document.createElement("ul");
       list.className = "resource-list";
@@ -294,19 +303,13 @@ export function renderModelDetailsContent(modelContent, payload) {
       panel.appendChild(linksRow);
     }
   });
+  }
 
-  appendAccordionSection(tagsTitle, { expanded: true, className: "tag-card" }, (panel) => {
+  const hasTags = Array.isArray(tags) && tags.length > 0;
+  if (hasTags) {
+    appendAccordionSection(tagsTitle, { expanded: false, className: "tag-card" }, (panel) => {
     const tagRow = document.createElement("div");
     tagRow.className = "pill-row";
-    if (!Array.isArray(tags) || tags.length === 0) {
-      const empty = document.createElement("div");
-      empty.className = "explain-value";
-      empty.textContent = fallbackNone;
-      tagRow.appendChild(empty);
-      panel.appendChild(tagRow);
-      return;
-    }
-
     for (const tag of tags) {
       const pill = document.createElement("span");
       pill.className = "pill";
@@ -315,6 +318,7 @@ export function renderModelDetailsContent(modelContent, payload) {
     }
     panel.appendChild(tagRow);
   });
+  }
 
   const triggers = [...modelContent.querySelectorAll(".accordion-trigger")];
   triggers.forEach((trigger, index) => {

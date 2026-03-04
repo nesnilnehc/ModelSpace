@@ -75,6 +75,13 @@ const tooltip = document.getElementById("tooltip");
 const modelContent = document.getElementById("modelContent");
 const appTitle = document.getElementById("appTitle");
 const appSubtitle = document.getElementById("appSubtitle");
+const aboutCardSummary = document.getElementById("aboutCardSummary");
+const aboutWhat = document.getElementById("aboutWhat");
+const aboutAxesIntro = document.getElementById("aboutAxesIntro");
+const aboutAxisXShort = document.getElementById("aboutAxisXShort");
+const aboutAxisYShort = document.getElementById("aboutAxisYShort");
+const aboutAxisZShort = document.getElementById("aboutAxisZShort");
+const aboutWho = document.getElementById("aboutWho");
 const modelMultiLabel = document.getElementById("modelMultiLabel");
 const cellFilterLabel = document.getElementById("cellFilterLabel");
 const linkToggleText = document.getElementById("linkToggleText");
@@ -876,6 +883,13 @@ function applyUILanguage() {
 
   appTitle.textContent = t.appTitle;
   appSubtitle.textContent = t.appSubtitle;
+  if (aboutCardSummary) aboutCardSummary.textContent = t.aboutCardSummary;
+  if (aboutWhat) aboutWhat.textContent = t.aboutWhat;
+  if (aboutAxesIntro) aboutAxesIntro.textContent = t.aboutAxesIntro;
+  if (aboutAxisXShort) aboutAxisXShort.textContent = t.aboutAxisXShort;
+  if (aboutAxisYShort) aboutAxisYShort.textContent = t.aboutAxisYShort;
+  if (aboutAxisZShort) aboutAxisZShort.textContent = t.aboutAxisZShort;
+  if (aboutWho) aboutWho.textContent = t.aboutWho;
   tabModelsBtn.textContent = t.toolbarTabModels;
   tabCellsBtn.textContent = t.toolbarTabCells;
   tabVisualBtn.textContent = t.toolbarTabVisual;
@@ -1475,7 +1489,7 @@ function renderModelDetails() {
         ? "status-rejected"
         : "";
 
-  const overviewRows = [
+  const rawOverviewRows = [
     { label: t.detailCategory, value: categoryText },
     { label: t.detailCell, value: spaceCell },
     { label: t.detailNeighbor, value: neighborText },
@@ -1484,11 +1498,15 @@ function renderModelDetails() {
     { label: t.detailZ, value: zAxisText }
   ];
   if (detailTechnicalViewEnabled) {
-    overviewRows.push({
+    rawOverviewRows.push({
       label: t.detailCoord,
       value: `(${model.x}, ${model.y}, ${model.z})`
     });
   }
+  const overviewRows = rawOverviewRows.filter((row) => {
+    const v = String(row.value ?? "").trim();
+    return v && v !== "-" && v !== t.detailNone;
+  });
 
   const judgementRows = [];
   const appendJudgementRow = (label, value, allowDash = false) => {
@@ -1509,8 +1527,11 @@ function renderModelDetails() {
     appendJudgementRow(t.judgementEvaluatedAt, evaluation?.evaluatedAt || "-");
   }
 
+  const summaryLine = descriptionText && String(descriptionText).trim() ? descriptionText.trim() : null;
+
   renderModelDetailsContent(modelContent, {
     displayName,
+    summaryLine,
     overviewTitle: t.detailOverviewTitle,
     overviewRows,
     descriptionTitle: t.detailDefinitionTitle,

@@ -175,6 +175,76 @@
       line-height: 1.35;
     }
 
+    .about-card {
+      margin: 12px 0 10px;
+      border: 1px solid rgba(132, 168, 255, 0.28);
+      border-radius: 12px;
+      background: rgba(8, 16, 32, 0.6);
+      overflow: hidden;
+    }
+
+    .about-card summary {
+      padding: 10px 12px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      color: var(--muted);
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .about-card summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .about-card summary::after {
+      content: "▼";
+      font-size: 0.7rem;
+      opacity: 0.7;
+      transition: transform 0.2s ease;
+    }
+
+    .about-card details[open] summary::after {
+      transform: rotate(-180deg);
+    }
+
+    .about-card summary:hover {
+      background: rgba(20, 35, 65, 0.5);
+      color: #c8d8f5;
+    }
+
+    .about-card-body {
+      padding: 0 12px 12px;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .about-card-body p {
+      margin: 0 0 8px;
+    }
+
+    .about-card-body p:last-child {
+      margin-bottom: 0;
+    }
+
+    .about-card-body strong {
+      color: #b8ccee;
+      font-weight: 600;
+    }
+
+    .about-card-body ul {
+      margin: 4px 0 8px;
+      padding-left: 18px;
+    }
+
+    .about-card-body li {
+      margin-bottom: 4px;
+    }
+
     .toolbar-tabs {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -532,6 +602,14 @@
       text-transform: uppercase;
     }
 
+    .model-summary {
+      margin: 0 0 14px;
+      padding: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
     .pill-row {
       display: flex;
       flex-wrap: wrap;
@@ -852,7 +930,22 @@
   <div id="overlay">
     <section class="panel controls">
       <h1 id="appTitle">认知模型三维坐标系</h1>
-      <p id="appSubtitle" class="subtitle">三维坐标可视化：时间导向 × 控制深度 × 抽象程度</p>
+      <p id="appSubtitle" class="subtitle">用三维空间探索思维与决策模型：定位、比较、深入学习。</p>
+      <div class="about-card">
+        <details id="aboutCardDetails" open>
+          <summary id="aboutCardSummary">这是什么？</summary>
+          <div class="about-card-body">
+            <p id="aboutWhat">本站在三维坐标系中展示一批认知与决策模型（如 MECE、OKR、黄金圈等），按时间导向、控制深度、抽象程度定位，便于比较与延伸阅读。</p>
+            <p><strong id="aboutAxesIntro">三轴含义：</strong></p>
+            <ul>
+              <li id="aboutAxisXShort">X 轴：过去 / 现在 / 未来（时间导向）</li>
+              <li id="aboutAxisYShort">Y 轴：表达层 → 结构层 → 战略层 → 元认知层（控制深度）</li>
+              <li id="aboutAxisZShort">Z 轴：工具 → 方法 → 原则 → 元模型（抽象程度）</li>
+            </ul>
+            <p id="aboutWho">适合做知识整理、战略思考或学习方法梳理时参考。</p>
+          </div>
+        </details>
+      </div>
       <div class="toolbar-tabs" role="tablist" aria-label="Toolbar sections">
         <button id="tabModelsBtn" class="toolbar-tab active" type="button" role="tab" aria-selected="true" aria-controls="toolbarTabModels" data-toolbar-tab="models">模型筛选</button>
         <button id="tabCellsBtn" class="toolbar-tab" type="button" role="tab" aria-selected="false" aria-controls="toolbarTabCells" data-toolbar-tab="cells">空间筛选</button>
