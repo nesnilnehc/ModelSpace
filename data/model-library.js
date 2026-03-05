@@ -9,12 +9,14 @@ window.MODEL_LIBRARY_ROWS = [
   ["Hero's Journey", "英雄之旅模型", "Narrative arc describing transformation journey.", "Expression"],
   ["4MAT", "四象限学习表达模型", "Why-What-How-What If learning cycle.", "Expression"],
   ["Elevator Pitch", "电梯演讲模型", "Concise persuasive summary structure.", "Expression"],
+  ["Yes And", "即兴接纳贡献法", "Accept (Yes) then add (And) to build collaboratively; improvisation principle for co-creation.", "Expression", 1, 2],
 
   ["MECE", "相互独立完全穷尽原则", "Mutually Exclusive Collectively Exhaustive structuring rule.", "Structure", 2, 3],
   ["5W1H", "六问分析法", "What-Why-Who-When-Where-How completeness check.", "Structure"],
   ["Issue Tree", "问题树", "Hierarchical problem decomposition.", "Structure"],
   ["Decision Tree", "决策树", "Tree-based probabilistic choice model.", "Structure"],
   ["P.A.R.A.", "项目领域资源归档体系", "Projects-Areas-Resources-Archives knowledge organization method.", "Structure", 2, 2],
+  ["9-Grid Thinking", "九宫格思维", "Time×Space matrix for structuring analysis; four lines break cognitive traps (Takagi/TRIZ).", "Structure", 2, 2],
 
   ["5 Whys", "五问根因法", "Iterative why questioning for root cause.", "Diagnosis"],
   ["Fishbone Diagram", "鱼骨图", "Cause-effect analysis diagram.", "Diagnosis"],
@@ -59,6 +61,7 @@ window.MODEL_LIBRARY_ROWS = [
   ["Maslow's Hierarchy", "需求层次理论", "Motivational hierarchy of needs.", "Strategy", 3, 3],
   ["Situational Leadership", "情境领导", "Adaptive leadership styles.", "Strategy", 3, 3],
   ["360 Feedback", "360度反馈", "Multi-source performance evaluation.", "Strategy", 3, 2],
+  ["ORID", "焦点讨论法", "Objective-Reflective-Interpretive-Decisional structured dialogue framework.", "Strategy", 3, 2],
   ["Game Theory", "博弈论", "Strategic interaction modeling.", "Strategy", 3, 3],
   ["Prisoner's Dilemma", "囚徒困境", "Cooperation vs defection dilemma.", "Strategy", 3, 3],
   ["Nash Equilibrium", "纳什均衡", "Stable strategic outcome.", "Strategy", 3, 3],
@@ -73,6 +76,7 @@ window.MODEL_LIBRARY_ROWS = [
   ["Hanlon's Razor", "汉隆剃刀", "Do not attribute to malice what can be explained by error.", "Meta", 4, 3],
   ["Inversion", "反向思考法", "Solve problems by considering the opposite.", "Meta", 4, 3],
   ["Abstraction Ladder", "抽象阶梯", "Move between concrete and abstract thinking levels.", "Meta", 4, 3],
+  ["Logical Levels", "逻辑层次模型", "Six-level hierarchy for problem framing: Mission-Identity-Values-Capability-Behavior-Environment.", "Meta", 4, 3],
   ["Antifragility", "反脆弱", "Systems that benefit from volatility.", "Meta", 4, 4],
   ["Bloom's Taxonomy", "布鲁姆认知层级", "Hierarchical learning objectives model.", "Meta", 4, 3],
   ["Feynman Technique", "费曼学习法", "Explain simply to test understanding.", "Meta", 4, 2],
@@ -360,6 +364,58 @@ window.MODEL_REFERENCE_RESOURCES = {
         url: "https://books.google.com/books?q=Surely+You%27re+Joking+Mr+Feynman"
       }
     ]
+  },
+  "ORID": {
+    authors: ["Institute for Cultural Affairs (ICA)"],
+    wikipedia: [
+      { title: "Focused conversation method", url: "https://en.wikipedia.org/w/index.php?search=ORID+focused+conversation" }
+    ],
+    books: [
+      {
+        title: "The Art of Focused Conversation",
+        author: "R. Brian Stanfield",
+        url: "https://books.google.com/books?q=The+Art+of+Focused+Conversation+Stanfield"
+      }
+    ]
+  },
+  "Logical Levels": {
+    authors: ["Robert Dilts"],
+    wikipedia: [
+      { title: "Logical levels", url: "https://en.wikipedia.org/w/index.php?search=Dilts+logical+levels" }
+    ],
+    books: [
+      {
+        title: "Changing Belief Systems with NLP",
+        author: "Robert Dilts",
+        url: "https://books.google.com/books?q=Changing+Belief+Systems+with+NLP+Dilts"
+      }
+    ]
+  },
+  "Yes And": {
+    authors: ["Improvisational theatre tradition"],
+    wikipedia: [
+      { title: "Yes, and...", url: "https://en.wikipedia.org/w/index.php?search=Yes+and+improvisation" }
+    ],
+    books: [
+      {
+        title: "Improvisation for the Theater",
+        author: "Viola Spolin",
+        url: "https://books.google.com/books?q=Improvisation+for+the+Theater+Spolin"
+      }
+    ]
+  },
+  "9-Grid Thinking": {
+    authors: ["高木芳德"],
+    wikipedia: [
+      { title: "TRIZ", url: "https://en.wikipedia.org/wiki/TRIZ" }
+    ],
+    books: [
+      {
+        title: "九宫格思维：四条线破解认知困局",
+        author: "高木芳德",
+        url: "https://books.google.com/books?q=九宫格思维+高木芳德"
+      }
+    ]
   }
 };
 
@@ -446,7 +502,11 @@ window.MODEL_EVALUATION_OVERRIDES = {
     "Paradox Thinking": "EV-SYSTEM",
     "Complex Adaptive Systems": "EV-SYSTEM",
     "Entropy": "EV-SYSTEM",
-    "Emergence": "EV-SYSTEM"
+    "Emergence": "EV-SYSTEM",
+    "ORID": "EV-EXP",
+    "Logical Levels": "EV-BEHAV",
+    "Yes And": "EV-EXP",
+    "9-Grid Thinking": "EV-STRUCT"
   };
 
   const byName = {};
