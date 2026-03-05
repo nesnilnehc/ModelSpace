@@ -65,6 +65,7 @@ const pyramidToggle = document.getElementById("pyramidToggle");
 const neighborToggle = document.getElementById("neighborToggle");
 const toolbarToggleBtn = document.getElementById("toolbarToggleBtn");
 const detailToggleBtn = document.getElementById("detailToggleBtn");
+const exportImageBtn = document.getElementById("exportImageBtn");
 const fullscreenToggleBtn = document.getElementById("fullscreenToggleBtn");
 const dockExpandBtn = document.getElementById("dockExpandBtn");
 const viewDock = document.querySelector(".view-dock");
@@ -309,6 +310,7 @@ detailCollapseAllBtn?.addEventListener("click", () => {
   const count = setAllDetailSectionsExpanded(modelContent, false);
   if (count > 0) updateDetailBulkActionButtons();
 });
+exportImageBtn?.addEventListener("click", exportCanvasImage);
 fullscreenToggleBtn.addEventListener("click", () => {
   toggleFullscreen();
 });
@@ -331,6 +333,35 @@ viewZAxisBtn?.addEventListener("click", () => {
   focusCameraOnView("z");
 });
 document.addEventListener("fullscreenchange", updateFullscreenButton);
+
+function exportCanvasImage() {
+  const overlayEl = document.getElementById("overlay");
+  const dockEl = document.querySelector(".view-dock");
+  const tooltipEl = document.getElementById("tooltip");
+  const origOverlay = overlayEl?.style.visibility;
+  const origDock = dockEl?.style.visibility;
+  const origTooltip = tooltipEl?.style.visibility;
+  overlayEl && (overlayEl.style.visibility = "hidden");
+  dockEl && (dockEl.style.visibility = "hidden");
+  tooltipEl && (tooltipEl.style.visibility = "hidden");
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      try {
+        const canvas = renderer.domElement;
+        const dataUrl = canvas.toDataURL("image/png");
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = `modelspace-${new Date().toISOString().slice(0, 10)}.png`;
+        a.click();
+      } finally {
+        overlayEl && (overlayEl.style.visibility = origOverlay || "");
+        dockEl && (dockEl.style.visibility = origDock || "");
+        tooltipEl && (tooltipEl.style.visibility = origTooltip || "");
+      }
+    });
+  });
+}
 modelContent.addEventListener("detail-sections-change", () => {
   updateDetailBulkActionButtons();
 });
@@ -940,6 +971,7 @@ function applyUILanguage() {
   if (detailCollapseAllBtn) detailCollapseAllBtn.textContent = t.detailCollapseAllText;
   toolbarToggleBtn.textContent = toolbarHidden ? t.showToolbarText : t.hideToolbarText;
   detailToggleBtn.textContent = infoHidden ? t.showDetailsText : t.hideDetailsText;
+  if (exportImageBtn) exportImageBtn.textContent = t.exportImageText;
   setActiveToolbarTab(activeToolbarTab);
   updateFullscreenButton();
   rebuildModelMultiList();

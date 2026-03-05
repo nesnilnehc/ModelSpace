@@ -66,6 +66,8 @@ node scripts/validate-model-data.mjs
 rm -f .tmp-*.png
 ```
 
+To update the promo image: open the 3D view, set the desired camera angle and filters, then click **导出图片** (Export image). Save as `docs/assets/modelspace-promo.png` to refresh the README preview.
+
 ### Project structure
 
 | Path | Purpose |
