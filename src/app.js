@@ -15,12 +15,16 @@ import {
   sortCellKey,
   toAxisSingleLine
 } from "./app3d/filters.js";
+import { createFilterSelectionState, createViewUiState } from "./app3d/state.js";
 import {
   getDetailSectionSummary,
+  renderCellFocusContent,
   renderModelDetailsContent,
   setAllDetailSectionsExpanded,
   renderValidationPanelContent
 } from "./app3d/ui.js";
+import { bindAppInteractionEvents } from "./app3d/interaction.js";
+import { createExportService } from "./app3d/export.js";
 const modelData = window.ModelLayout
   .buildModelData(window.MODEL_LIBRARY_ROWS)
   .filter((model) => model?.evaluation?.stageA !== "不纳入");
@@ -120,21 +124,9 @@ const toolbarTabButtons = document.querySelectorAll("[data-toolbar-tab]");
 const toolbarTabPanels = document.querySelectorAll("[data-toolbar-panel]");
 const quickLangButtons = document.querySelectorAll("[data-ui-lang]");
 
-let keyword = "";
-let cellKeyword = "";
-let hoveredMesh = null;
-let selectedMesh = null;
-let neighborMeshes = [];
-const selectedModelNames = new Set(modelData.map((model) => model.name));
-const selectedCellKeys = new Set();
-const allCellKeys = [];
-let cellEntries = [];
-let initializedCellSelection = false;
-let uiLanguage = "zh";
-let toolbarHidden = false;
-let infoHidden = false;
-let detailTechnicalViewEnabled = false;
-let activeToolbarTab = "models";
+const filterSelectionState = createFilterSelectionState(modelData);
+const viewUiState = createViewUiState({ defaultLanguage: "zh" });
+const initialUrlState = parseUrlStateFromQuery();
 const defaultViewDirection = new THREE.Vector3(1.22, 0.96, 1.18).normalize();
 const promoViewDirection = new THREE.Vector3(1.15, 1.02, 1.12).normalize();
 const CAMERA_VIEW_DIRECTIONS = {
@@ -144,9 +136,8 @@ const CAMERA_VIEW_DIRECTIONS = {
   y: new THREE.Vector3(0.06, 1, 0.06).normalize(),
   z: new THREE.Vector3(0.04, 0.08, 1).normalize()
 };
-let activeCameraView = "default";
-let baseCameraCenter = new THREE.Vector3(0, 0, 0);
-let baseCameraDistance = 128;
+viewUiState.baseCameraCenter = new THREE.Vector3(0, 0, 0);
+let suppressUrlSync = false;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0a1220);
@@ -198,302 +189,331 @@ const pointer = new THREE.Vector2();
 const lastPointerClient = { x: 0, y: 0 };
 const lastCameraPosition = new THREE.Vector3(Number.NaN, Number.NaN, Number.NaN);
 const nodeMeshes = [];
+const modelMeshByName = new Map();
 let visibleNodeMeshes = [];
 let queuedPointerEvent = null;
 let pointerFrameQueued = false;
+const { getExportDataUrl, exportCanvasImage } = createExportService({
+  renderer,
+  camera,
+  scene,
+  axisGroup,
+  computeGridBands,
+  scale: SCALE,
+  toWorldY,
+  toWorldZ,
+  visualConfig: VISUAL_CONFIG
+});
 
 buildNodes();
 
 const isMobile = window.matchMedia("(max-width: 768px)").matches;
+const isEmbedMode = new URLSearchParams(window.location.search).has("embed");
 const isSimpleMode = new URLSearchParams(window.location.search).has("simple") || isMobile;
+if (isEmbedMode) {
+  document.body.classList.add("embed-mode");
+}
 if (isSimpleMode) {
   document.body.classList.add("simple-mode");
-  toolbarHidden = true;
-  infoHidden = true;
+  viewUiState.toolbarHidden = true;
+  viewUiState.infoHidden = true;
   setToolbarHidden(true);
   setInfoHidden(true);
 }
 
 applyUILanguage();
+applyUrlState(initialUrlState);
 rebuildLinks();
 
-linkToggle.addEventListener("change", () => rebuildLinks());
-pyramidToggle.addEventListener("change", () => {
-  pyramidGroup.visible = pyramidToggle.checked;
-});
-neighborToggle.addEventListener("change", () => {
-  refreshNeighborHighlights();
-  refreshNodeStyles();
-});
-
-modelMultiSearchInput.addEventListener("input", (event) => {
-  keyword = event.target.value.trim().toLowerCase();
-  rebuildModelMultiList();
-  applyFilters();
-});
-
-modelMultiSelectVisibleBtn.addEventListener("click", () => {
-  const candidates = getKeywordMatchedModels();
-  candidates.forEach((model) => selectedModelNames.add(model.name));
-  refreshModelMultiChecks();
-  applyFilters();
-});
-
-modelMultiSelectAllBtn.addEventListener("click", () => {
-  selectedModelNames.clear();
-  modelData.forEach((model) => selectedModelNames.add(model.name));
-  refreshModelMultiChecks();
-  applyFilters();
-});
-
-modelMultiClearBtn.addEventListener("click", () => {
-  selectedModelNames.clear();
-  refreshModelMultiChecks();
-  applyFilters();
-});
-
-cellMultiSearchInput.addEventListener("input", (event) => {
-  cellKeyword = event.target.value.trim().toLowerCase();
-  rebuildCellFilterOptions();
-  applyFilters();
-});
-
-cellMultiSelectVisibleBtn.addEventListener("click", () => {
-  getKeywordMatchedCellEntries().forEach((entry) => selectedCellKeys.add(entry.key));
-  rebuildCellFilterOptions();
-  applyFilters();
-});
-
-cellMultiSelectAllBtn.addEventListener("click", () => {
-  selectedCellKeys.clear();
-  allCellKeys.forEach((key) => selectedCellKeys.add(key));
-  rebuildCellFilterOptions();
-  applyFilters();
-});
-
-cellMultiClearBtn.addEventListener("click", () => {
-  selectedCellKeys.clear();
-  rebuildCellFilterOptions();
-  applyFilters();
-});
-
-quickLangButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    const nextLang = button.dataset.uiLang;
-    if (!nextLang || nextLang === uiLanguage) return;
-    uiLanguage = nextLang;
-    applyUILanguage();
-  });
-});
-toolbarTabButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    const nextTab = button.dataset.toolbarTab;
-    if (!nextTab) return;
-    setActiveToolbarTab(nextTab);
-  });
-  button.addEventListener("keydown", (event) => {
-    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
-    const buttons = [...toolbarTabButtons];
-    const index = buttons.indexOf(button);
-    if (index < 0) return;
-    const nextIndex = event.key === "ArrowRight"
-      ? (index + 1) % buttons.length
-      : (index - 1 + buttons.length) % buttons.length;
-    const nextButton = buttons[nextIndex];
-    const nextTab = nextButton?.dataset?.toolbarTab;
-    if (!nextTab) return;
-    setActiveToolbarTab(nextTab);
-    nextButton.focus();
-    event.preventDefault();
-  });
-});
-toolbarToggleBtn.addEventListener("click", () => {
-  setToolbarHidden(!toolbarHidden);
-});
-detailToggleBtn.addEventListener("click", () => {
-  setInfoHidden(!infoHidden);
-});
-detailCoordToggleBtn?.addEventListener("click", () => {
-  detailTechnicalViewEnabled = !detailTechnicalViewEnabled;
-  updateDetailCoordToggleButton();
-  renderModelDetails();
-});
-detailExpandAllBtn?.addEventListener("click", () => {
-  const count = setAllDetailSectionsExpanded(modelContent, true);
-  if (count > 0) updateDetailBulkActionButtons();
-});
-detailCollapseAllBtn?.addEventListener("click", () => {
-  const count = setAllDetailSectionsExpanded(modelContent, false);
-  if (count > 0) updateDetailBulkActionButtons();
-});
-exportImageBtn?.addEventListener("click", exportCanvasImage);
-fullscreenToggleBtn.addEventListener("click", () => {
-  toggleFullscreen();
-});
-dockExpandBtn?.addEventListener("click", () => {
-  viewDock?.classList.toggle("dock-expanded");
-});
-overviewModeBtn?.addEventListener("click", () => {
-  enterOverviewMode({ resetCamera: true });
-});
-viewResetBtn?.addEventListener("click", () => {
-  focusCameraOnView("default");
-});
-viewPromoBtn?.addEventListener("click", () => {
-  focusCameraOnView("promo");
-});
-viewXAxisBtn?.addEventListener("click", () => {
-  focusCameraOnView("x");
-});
-viewYAxisBtn?.addEventListener("click", () => {
-  focusCameraOnView("y");
-});
-viewZAxisBtn?.addEventListener("click", () => {
-  focusCameraOnView("z");
-});
-document.addEventListener("fullscreenchange", updateFullscreenButton);
-
-function getCognitiveSpaceBoundsInPixels(options = {}) {
-  const { tight = false } = options;
-  const xBand = computeGridBands([-1, 0, 1].map((x) => x * SCALE.x), SCALE.x);
-  const yBand = computeGridBands([1, 2, 3, 4].map((y) => toWorldY(y)), SCALE.y);
-  const zBand = computeGridBands([1, 2, 3, 4].map((z) => toWorldZ(z)), SCALE.z);
-  const padding = tight ? 2 : 14;
-  const box = new THREE.Box3(
-    new THREE.Vector3(xBand.min - padding, yBand.min - padding, zBand.min - padding),
-    new THREE.Vector3(xBand.max + padding, yBand.max + padding, zBand.max + padding)
-  );
-  const corners = [
-    new THREE.Vector3(box.min.x, box.min.y, box.min.z),
-    new THREE.Vector3(box.max.x, box.min.y, box.min.z),
-    new THREE.Vector3(box.min.x, box.max.y, box.min.z),
-    new THREE.Vector3(box.max.x, box.max.y, box.min.z),
-    new THREE.Vector3(box.min.x, box.min.y, box.max.z),
-    new THREE.Vector3(box.max.x, box.min.y, box.max.z),
-    new THREE.Vector3(box.min.x, box.max.y, box.max.z),
-    new THREE.Vector3(box.max.x, box.max.y, box.max.z)
-  ];
-  const canvas = renderer.domElement;
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  const v = new THREE.Vector3();
-  for (const corner of corners) {
-    v.copy(corner).project(camera);
-    const px = (v.x * 0.5 + 0.5) * canvas.width;
-    const py = (1 - (v.y * 0.5 + 0.5)) * canvas.height;
-    if (v.z >= -1 && v.z <= 1) {
-      minX = Math.min(minX, px);
-      minY = Math.min(minY, py);
-      maxX = Math.max(maxX, px);
-      maxY = Math.max(maxY, py);
-    }
+bindAppInteractionEvents({
+  elements: {
+    linkToggle,
+    pyramidToggle,
+    neighborToggle,
+    modelMultiSearchInput,
+    modelMultiSelectVisibleBtn,
+    modelMultiSelectAllBtn,
+    modelMultiClearBtn,
+    cellMultiSearchInput,
+    cellMultiSelectVisibleBtn,
+    cellMultiSelectAllBtn,
+    cellMultiClearBtn,
+    quickLangButtons,
+    toolbarTabButtons,
+    toolbarToggleBtn,
+    detailToggleBtn,
+    detailCoordToggleBtn,
+    detailExpandAllBtn,
+    detailCollapseAllBtn,
+    exportImageBtn,
+    fullscreenToggleBtn,
+    dockExpandBtn,
+    overviewModeBtn,
+    viewResetBtn,
+    viewPromoBtn,
+    viewXAxisBtn,
+    viewYAxisBtn,
+    viewZAxisBtn,
+    modelContent
+  },
+  callbacks: {
+    onLinkToggleChange: () => {
+      rebuildLinks();
+      syncUrlState();
+    },
+    onPyramidToggleChange: () => {
+      pyramidGroup.visible = pyramidToggle.checked;
+      syncUrlState();
+    },
+    onNeighborToggleChange: () => {
+      refreshNeighborHighlights();
+      refreshNodeStyles();
+      syncUrlState();
+    },
+    onModelSearchInput: (event) => {
+      filterSelectionState.keyword = event.target.value.trim().toLowerCase();
+      rebuildModelMultiList();
+      applyFilters();
+    },
+    onModelSelectVisible: () => {
+      const candidates = getKeywordMatchedModels();
+      candidates.forEach((model) => filterSelectionState.selectedModelNames.add(model.name));
+      refreshModelMultiChecks();
+      applyFilters();
+    },
+    onModelSelectAll: () => {
+      filterSelectionState.selectedModelNames.clear();
+      modelData.forEach((model) => filterSelectionState.selectedModelNames.add(model.name));
+      refreshModelMultiChecks();
+      applyFilters();
+    },
+    onModelClear: () => {
+      filterSelectionState.selectedModelNames.clear();
+      refreshModelMultiChecks();
+      applyFilters();
+    },
+    onCellSearchInput: (event) => {
+      filterSelectionState.cellKeyword = event.target.value.trim().toLowerCase();
+      rebuildCellFilterOptions();
+      applyFilters();
+    },
+    onCellSelectVisible: () => {
+      getKeywordMatchedCellEntries().forEach((entry) => filterSelectionState.selectedCellKeys.add(entry.key));
+      rebuildCellFilterOptions();
+      applyFilters();
+    },
+    onCellSelectAll: () => {
+      filterSelectionState.selectedCellKeys.clear();
+      filterSelectionState.allCellKeys.forEach((key) => filterSelectionState.selectedCellKeys.add(key));
+      rebuildCellFilterOptions();
+      applyFilters();
+    },
+    onCellClear: () => {
+      filterSelectionState.selectedCellKeys.clear();
+      rebuildCellFilterOptions();
+      applyFilters();
+    },
+    onLanguageSelect: (nextLang) => {
+      if (!nextLang || nextLang === viewUiState.uiLanguage) return;
+      viewUiState.uiLanguage = nextLang;
+      applyUILanguage();
+    },
+    onToolbarTabSelect: (nextTab) => {
+      if (!nextTab) return;
+      setActiveToolbarTab(nextTab);
+    },
+    onToolbarToggle: () => {
+      setToolbarHidden(!viewUiState.toolbarHidden);
+      syncUrlState();
+    },
+    onDetailToggle: () => {
+      setInfoHidden(!viewUiState.infoHidden);
+      syncUrlState();
+    },
+    onDetailCoordToggle: () => {
+      viewUiState.detailTechnicalViewEnabled = !viewUiState.detailTechnicalViewEnabled;
+      updateDetailCoordToggleButton();
+      renderModelDetails();
+    },
+    onDetailExpandAll: () => {
+      const count = setAllDetailSectionsExpanded(modelContent, true);
+      if (count > 0) updateDetailBulkActionButtons();
+    },
+    onDetailCollapseAll: () => {
+      const count = setAllDetailSectionsExpanded(modelContent, false);
+      if (count > 0) updateDetailBulkActionButtons();
+    },
+    onExportImage: () => {
+      exportCanvasImage(buildExportFileName());
+    },
+    onFullscreenToggle: () => {
+      toggleFullscreen();
+    },
+    onDockExpand: () => {
+      viewDock?.classList.toggle("dock-expanded");
+    },
+    onOverviewMode: () => {
+      enterOverviewMode({ resetCamera: true });
+      syncUrlState();
+    },
+    onViewReset: () => {
+      focusCameraOnView("default");
+    },
+    onViewPromo: () => {
+      focusCameraOnView("promo");
+    },
+    onViewXAxis: () => {
+      focusCameraOnView("x");
+    },
+    onViewYAxis: () => {
+      focusCameraOnView("y");
+    },
+    onViewZAxis: () => {
+      focusCameraOnView("z");
+    },
+    onFullscreenChange: updateFullscreenButton,
+    onDetailSectionsChange: () => {
+      updateDetailBulkActionButtons();
+    },
+    onModelContentClick: (event) => {
+      if (!(event.target instanceof Element)) return;
+      const actionButton = event.target.closest("[data-model-name]");
+      if (!(actionButton instanceof HTMLElement)) return;
+      const modelName = actionButton.dataset.modelName;
+      if (!modelName) return;
+      focusModelByName(modelName);
+    },
+    onWindowPointerMove: queuePointerMove,
+    onWindowClick: onSceneClick,
+    onWindowResize: onResize
   }
-  if (!Number.isFinite(minX) || !Number.isFinite(maxX)) {
-    return { x: 0, y: 0, width: canvas.width, height: canvas.height };
-  }
-  const margin = tight ? VISUAL_CONFIG.exportCropMargin : 24;
-  let x = Math.max(0, Math.floor(minX) - margin);
-  let y = Math.max(0, Math.floor(minY) - margin);
-  let width = Math.ceil(maxX - minX) + margin * 2;
-  let height = Math.ceil(maxY - minY) + margin * 2;
-  if (x + width > canvas.width) width = canvas.width - x;
-  if (y + height > canvas.height) height = canvas.height - y;
-  width = Math.max(1, Math.min(width, canvas.width));
-  height = Math.max(1, Math.min(height, canvas.height));
-  x = Math.min(x, canvas.width - width);
-  y = Math.min(y, canvas.height - height);
-  return { x, y, width, height };
-}
-
-function scaleAxisLabelSprites(scale) {
-  axisGroup.traverse((obj) => {
-    if (obj.isSprite && obj.material?.map) {
-      obj.scale.multiplyScalar(scale);
-    }
-  });
-}
-
-function getExportDataUrl() {
-  return new Promise((resolve, reject) => {
-    const overlayEl = document.getElementById("overlay");
-    const dockEl = document.querySelector(".view-dock");
-    const tooltipEl = document.getElementById("tooltip");
-    const origOverlay = overlayEl?.style.visibility;
-    const origDock = dockEl?.style.visibility;
-    const origTooltip = tooltipEl?.style.visibility;
-    const origFog = scene.fog;
-    const origBackground = scene.background;
-    const origClearColor = renderer.getClearColor(new THREE.Color());
-    const origClearAlpha = renderer.getClearAlpha();
-    overlayEl && (overlayEl.style.visibility = "hidden");
-    dockEl && (dockEl.style.visibility = "hidden");
-    tooltipEl && (tooltipEl.style.visibility = "hidden");
-    scene.fog = null;
-    scene.background = new THREE.Color(0x0a1220);
-    renderer.setClearColor(0x0a1220, 1);
-    scaleAxisLabelSprites(VISUAL_CONFIG.exportAxisLabelScale);
-    const origPixelRatio = renderer.getPixelRatio();
-    const exportPR = VISUAL_CONFIG.exportPixelRatio ?? 2;
-    renderer.setPixelRatio(Math.max(origPixelRatio, exportPR));
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        try {
-          const canvas = renderer.domElement;
-          const rect = getCognitiveSpaceBoundsInPixels({ tight: true });
-          const cropCanvas = document.createElement("canvas");
-          cropCanvas.width = rect.width;
-          cropCanvas.height = rect.height;
-          const ctx = cropCanvas.getContext("2d");
-          ctx.drawImage(
-            canvas,
-            rect.x, rect.y, rect.width, rect.height,
-            0, 0, rect.width, rect.height
-          );
-          resolve(cropCanvas.toDataURL("image/png"));
-        } catch (e) {
-          reject(e);
-        } finally {
-          renderer.setPixelRatio(origPixelRatio);
-          scaleAxisLabelSprites(1 / VISUAL_CONFIG.exportAxisLabelScale);
-          overlayEl && (overlayEl.style.visibility = origOverlay || "");
-          dockEl && (dockEl.style.visibility = origDock || "");
-          tooltipEl && (tooltipEl.style.visibility = origTooltip || "");
-          scene.fog = origFog;
-          scene.background = origBackground;
-          renderer.setClearColor(origClearColor, origClearAlpha);
-        }
-      });
-    });
-  });
-}
-
-function exportCanvasImage() {
-  getExportDataUrl().then((dataUrl) => {
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = `modelspace-${new Date().toISOString().slice(0, 10)}.png`;
-    a.click();
-  });
-}
+});
 
 if (typeof window !== "undefined") {
   window.__getPromoExportDataUrl = getExportDataUrl;
 }
-modelContent.addEventListener("detail-sections-change", () => {
-  updateDetailBulkActionButtons();
-});
-
-window.addEventListener("pointermove", queuePointerMove);
-window.addEventListener("click", onSceneClick);
-window.addEventListener("resize", onResize);
 
 animate();
 
+function parseUrlStateFromQuery() {
+  if (typeof window === "undefined") return {};
+  const params = new URLSearchParams(window.location.search);
+  const parseList = (raw, separator) => {
+    if (!raw) return [];
+    return raw
+      .split(separator)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  };
+
+  return {
+    lang: params.get("lang") || "",
+    view: params.get("view") || "",
+    models: parseList(params.get("models"), ","),
+    cells: parseList(params.get("cells"), ";"),
+    keyword: params.get("q") || "",
+    cellKeyword: params.get("cq") || "",
+    link: params.get("link"),
+    grid: params.get("grid"),
+    neighbor: params.get("neighbor"),
+    toolbar: params.get("toolbar"),
+    detail: params.get("detail"),
+    tab: params.get("tab") || ""
+  };
+}
+
+function applyUrlState(state) {
+  if (!state || typeof state !== "object") return;
+  suppressUrlSync = true;
+  try {
+    if (state.lang === "zh" || state.lang === "en") {
+      viewUiState.uiLanguage = state.lang;
+    }
+
+    if (state.link === "0") linkToggle.checked = false;
+    if (state.grid === "0") pyramidToggle.checked = false;
+    if (state.neighbor === "0") neighborToggle.checked = false;
+    if (state.toolbar === "0") setToolbarHidden(true);
+    if (state.detail === "0") setInfoHidden(true);
+    if (state.tab) setActiveToolbarTab(state.tab);
+
+    if (Array.isArray(state.models) && state.models.length > 0) {
+      filterSelectionState.selectedModelNames.clear();
+      state.models.forEach((name) => {
+        if (modelMeshByName.has(name)) {
+          filterSelectionState.selectedModelNames.add(name);
+        }
+      });
+    }
+
+    if (state.keyword) {
+      filterSelectionState.keyword = state.keyword.toLowerCase();
+      modelMultiSearchInput.value = state.keyword;
+    }
+    if (state.cellKeyword) {
+      filterSelectionState.cellKeyword = state.cellKeyword.toLowerCase();
+      cellMultiSearchInput.value = state.cellKeyword;
+    }
+
+    applyUILanguage();
+
+    if (Array.isArray(state.cells) && state.cells.length > 0) {
+      const validCellKeys = new Set(filterSelectionState.allCellKeys);
+      filterSelectionState.selectedCellKeys.clear();
+      state.cells.forEach((cellKey) => {
+        if (validCellKeys.has(cellKey)) filterSelectionState.selectedCellKeys.add(cellKey);
+      });
+      if (filterSelectionState.selectedCellKeys.size === 0) {
+        filterSelectionState.allCellKeys.forEach((cellKey) => filterSelectionState.selectedCellKeys.add(cellKey));
+      }
+      rebuildCellFilterOptions();
+      applyFilters();
+    }
+
+    if (state.view && CAMERA_VIEW_DIRECTIONS[state.view]) {
+      focusCameraOnView(state.view, { keepSelection: true });
+    }
+  } finally {
+    suppressUrlSync = false;
+    syncUrlState();
+  }
+}
+
+function syncUrlState() {
+  if (suppressUrlSync || typeof window === "undefined") return;
+  const params = new URLSearchParams();
+
+  if (viewUiState.uiLanguage !== "zh") params.set("lang", viewUiState.uiLanguage);
+  if (viewUiState.activeCameraView !== "default") params.set("view", viewUiState.activeCameraView);
+  if (viewUiState.activeToolbarTab !== "models") params.set("tab", viewUiState.activeToolbarTab);
+
+  if (!linkToggle.checked) params.set("link", "0");
+  if (!pyramidToggle.checked) params.set("grid", "0");
+  if (!neighborToggle.checked) params.set("neighbor", "0");
+  if (viewUiState.toolbarHidden) params.set("toolbar", "0");
+  if (viewUiState.infoHidden) params.set("detail", "0");
+
+  if (filterSelectionState.keyword) params.set("q", filterSelectionState.keyword);
+  if (filterSelectionState.cellKeyword) params.set("cq", filterSelectionState.cellKeyword);
+
+  if (filterSelectionState.selectedModelNames.size > 0
+    && filterSelectionState.selectedModelNames.size < modelData.length) {
+    params.set("models", [...filterSelectionState.selectedModelNames].sort().join(","));
+  }
+
+  if (filterSelectionState.allCellKeys.length > 0
+    && filterSelectionState.selectedCellKeys.size > 0
+    && filterSelectionState.selectedCellKeys.size < filterSelectionState.allCellKeys.length) {
+    params.set("cells", [...filterSelectionState.selectedCellKeys].sort(sortCellKey).join(";"));
+  }
+
+  const query = params.toString();
+  const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
+  window.history.replaceState(null, "", nextUrl);
+}
+
 function getUIText(key) {
-  return UI_TEXT[uiLanguage][key];
+  return UI_TEXT[viewUiState.uiLanguage][key];
 }
 
 function buildSearchUrl(base, query) {
@@ -569,7 +589,7 @@ function queuePointerMove(event) {
 function setActiveToolbarTab(tabName) {
   const availableTabs = new Set(["models", "cells", "visual"]);
   const nextTab = availableTabs.has(tabName) ? tabName : "models";
-  activeToolbarTab = nextTab;
+  viewUiState.activeToolbarTab = nextTab;
   toolbarTabButtons.forEach((button) => {
     const isActive = button.dataset.toolbarTab === nextTab;
     button.classList.toggle("active", isActive);
@@ -578,13 +598,14 @@ function setActiveToolbarTab(tabName) {
   toolbarTabPanels.forEach((panel) => {
     panel.classList.toggle("active", panel.dataset.toolbarPanel === nextTab);
   });
+  syncUrlState();
 }
 
 function isOverviewMode() {
   return isAllCellsSelected()
-    && selectedModelNames.size === modelData.length
-    && keyword.length === 0
-    && cellKeyword.length === 0;
+    && filterSelectionState.selectedModelNames.size === modelData.length
+    && filterSelectionState.keyword.length === 0
+    && filterSelectionState.cellKeyword.length === 0;
 }
 
 function updateViewControlsState() {
@@ -603,7 +624,7 @@ function updateViewControlsState() {
   };
   Object.entries(cameraButtonByKey).forEach(([key, button]) => {
     if (!button) return;
-    const isActive = activeCameraView === key;
+    const isActive = viewUiState.activeCameraView === key;
     button.classList.toggle("active", isActive);
     button.setAttribute("aria-pressed", isActive ? "true" : "false");
   });
@@ -612,30 +633,31 @@ function updateViewControlsState() {
 function focusCameraOnView(viewKey, options = {}) {
   const { keepSelection = false } = options;
   const nextView = CAMERA_VIEW_DIRECTIONS[viewKey] ? viewKey : "default";
-  activeCameraView = nextView;
+  viewUiState.activeCameraView = nextView;
   const direction = CAMERA_VIEW_DIRECTIONS[nextView];
-  controls.target.copy(baseCameraCenter);
-  camera.position.copy(baseCameraCenter).addScaledVector(direction, baseCameraDistance);
+  controls.target.copy(viewUiState.baseCameraCenter);
+  camera.position.copy(viewUiState.baseCameraCenter).addScaledVector(direction, viewUiState.baseCameraDistance);
   controls.update();
   if (!keepSelection) {
-    hoveredMesh = null;
+    viewUiState.hoveredMesh = null;
     hideTooltip();
   }
   refreshNodeStyles();
   updateViewControlsState();
+  syncUrlState();
 }
 
 function enterOverviewMode(options = {}) {
   const { resetCamera = false } = options;
 
-  keyword = "";
-  cellKeyword = "";
+  filterSelectionState.keyword = "";
+  filterSelectionState.cellKeyword = "";
   modelMultiSearchInput.value = "";
   cellMultiSearchInput.value = "";
-  selectedModelNames.clear();
-  modelData.forEach((model) => selectedModelNames.add(model.name));
-  selectedCellKeys.clear();
-  allCellKeys.forEach((key) => selectedCellKeys.add(key));
+  filterSelectionState.selectedModelNames.clear();
+  modelData.forEach((model) => filterSelectionState.selectedModelNames.add(model.name));
+  filterSelectionState.selectedCellKeys.clear();
+  filterSelectionState.allCellKeys.forEach((key) => filterSelectionState.selectedCellKeys.add(key));
   selectNode(null);
   rebuildModelMultiList();
   rebuildCellFilterOptions();
@@ -655,7 +677,7 @@ function toWorldZ(zLevel) {
 }
 
 function getModelAnnotation(model) {
-  return uiLanguage === "en" ? (model.aliasEn ?? model.aliasZh ?? "") : (model.aliasZh ?? model.aliasEn ?? "");
+  return viewUiState.uiLanguage === "en" ? (model.aliasEn ?? model.aliasZh ?? "") : (model.aliasZh ?? model.aliasEn ?? "");
 }
 
 function getModelLabel(model) {
@@ -751,6 +773,7 @@ function buildNodes() {
 
     nodesGroup.add(mesh);
     nodeMeshes.push(mesh);
+    modelMeshByName.set(item.name, mesh);
   }
 }
 
@@ -767,17 +790,17 @@ function getCellCenter(cellKey) {
 }
 
 function getModelMultiSummaryText() {
-  const t = UI_TEXT[uiLanguage];
-  if (selectedModelNames.size === modelData.length) return t.modelMultiSummaryAll;
-  if (selectedModelNames.size === 0) return t.modelMultiSummaryNone;
-  const count = selectedModelNames.size;
-  if (uiLanguage === "zh") return `${t.modelMultiSummarySelected}：${count} 个模型`;
+  const t = UI_TEXT[viewUiState.uiLanguage];
+  if (filterSelectionState.selectedModelNames.size === modelData.length) return t.modelMultiSummaryAll;
+  if (filterSelectionState.selectedModelNames.size === 0) return t.modelMultiSummaryNone;
+  const count = filterSelectionState.selectedModelNames.size;
+  if (viewUiState.uiLanguage === "zh") return `${t.modelMultiSummarySelected}：${count} 个模型`;
   return `${t.modelMultiSummarySelected}: ${count} ${count === 1 ? "model" : "models"}`;
 }
 
 function getKeywordMatchedModels() {
-  if (!keyword) return [...modelData];
-  return modelData.filter((model) => getModelSearchText(model).includes(keyword));
+  if (!filterSelectionState.keyword) return [...modelData];
+  return modelData.filter((model) => getModelSearchText(model).includes(filterSelectionState.keyword));
 }
 
 function rebuildModelMultiList() {
@@ -786,7 +809,7 @@ function rebuildModelMultiList() {
   if (!matched.length) {
     const empty = document.createElement("div");
     empty.className = "model-multi-empty";
-    empty.textContent = UI_TEXT[uiLanguage].modelMultiNoResult;
+    empty.textContent = UI_TEXT[viewUiState.uiLanguage].modelMultiNoResult;
     modelMultiList.appendChild(empty);
   }
 
@@ -794,15 +817,15 @@ function rebuildModelMultiList() {
     const model = matched[index];
     const tag = document.createElement("button");
     tag.type = "button";
-    tag.className = `filter-tag ${selectedModelNames.has(model.name) ? "active" : ""}`;
+    tag.className = `filter-tag ${filterSelectionState.selectedModelNames.has(model.name) ? "active" : ""}`;
     tag.textContent = model.name;
     tag.title = getModelLabel(model);
-    tag.setAttribute("aria-pressed", selectedModelNames.has(model.name) ? "true" : "false");
+    tag.setAttribute("aria-pressed", filterSelectionState.selectedModelNames.has(model.name) ? "true" : "false");
     tag.addEventListener("click", () => {
-      if (selectedModelNames.has(model.name)) {
-        selectedModelNames.delete(model.name);
+      if (filterSelectionState.selectedModelNames.has(model.name)) {
+        filterSelectionState.selectedModelNames.delete(model.name);
       } else {
-        selectedModelNames.add(model.name);
+        filterSelectionState.selectedModelNames.add(model.name);
       }
       rebuildModelMultiList();
       applyFilters();
@@ -829,13 +852,13 @@ function chooseTypicalModel(models) {
 
 function makeCellLabel(cellKey, stats, compact = false) {
   const [xKey, yKey, zKey] = cellKey.split("|");
-  const axisText = AXIS_TEXT_BY_LANG[uiLanguage];
+  const axisText = AXIS_TEXT_BY_LANG[viewUiState.uiLanguage];
   const xText = toAxisSingleLine(axisText.x[xKey]);
   const yText = toAxisSingleLine(axisText.y[yKey]);
   const zText = toAxisSingleLine(axisText.z[zKey]);
   const typicalModel = chooseTypicalModel(stats.models);
   const typicalName = typicalModel ? typicalModel.name : "-";
-  const t = UI_TEXT[uiLanguage];
+  const t = UI_TEXT[viewUiState.uiLanguage];
 
   if (compact) {
     if (stats.count <= 1) return shortenModelName(typicalName, 12);
@@ -914,37 +937,39 @@ function buildValidationSnapshot() {
 
 function renderValidationPanel() {
   if (!validationPanel) return;
-  const t = UI_TEXT[uiLanguage];
+  const t = UI_TEXT[viewUiState.uiLanguage];
   const snapshot = buildValidationSnapshot();
   renderValidationPanelContent(validationPanel, t, snapshot, getCellShortLabel);
 }
 
 function getCellShortLabel(cellKey) {
   const [xKey, yKey, zKey] = cellKey.split("|");
-  const axisText = AXIS_TEXT_BY_LANG[uiLanguage];
+  const axisText = AXIS_TEXT_BY_LANG[viewUiState.uiLanguage];
   return `${toAxisSingleLine(axisText.x[xKey])} · ${toAxisSingleLine(axisText.y[yKey])} · ${toAxisSingleLine(axisText.z[zKey])}`;
 }
 
 function isAllCellsSelected() {
-  return allCellKeys.length > 0 && selectedCellKeys.size === allCellKeys.length;
+  return filterSelectionState.allCellKeys.length > 0
+    && filterSelectionState.selectedCellKeys.size === filterSelectionState.allCellKeys.length;
 }
 
 function getCellMultiSummaryText() {
-  const t = UI_TEXT[uiLanguage];
+  const t = UI_TEXT[viewUiState.uiLanguage];
   if (isAllCellsSelected()) return t.cellMultiSummaryAll;
-  if (selectedCellKeys.size === 0) return t.cellMultiSummaryNone;
-  return `${t.cellMultiSummarySelected}: ${selectedCellKeys.size}`;
+  if (filterSelectionState.selectedCellKeys.size === 0) return t.cellMultiSummaryNone;
+  return `${t.cellMultiSummarySelected}: ${filterSelectionState.selectedCellKeys.size}`;
 }
 
 function getKeywordMatchedCellEntries() {
-  if (!cellKeyword) return [...cellEntries];
-  return cellEntries.filter((entry) => entry.label.toLowerCase().includes(cellKeyword));
+  if (!filterSelectionState.cellKeyword) return [...filterSelectionState.cellEntries];
+  return filterSelectionState.cellEntries
+    .filter((entry) => entry.label.toLowerCase().includes(filterSelectionState.cellKeyword));
 }
 
 function rebuildCellFilterOptions() {
-  const t = UI_TEXT[uiLanguage];
+  const t = UI_TEXT[viewUiState.uiLanguage];
   const stats = getCellStats(false);
-  cellEntries = [...stats.entries()]
+  filterSelectionState.cellEntries = [...stats.entries()]
     .sort((a, b) => sortCellKey(a[0], b[0]))
     .map(([key, cellStats]) => ({
       key,
@@ -952,17 +977,17 @@ function rebuildCellFilterOptions() {
       label: makeCellLabel(key, cellStats)
     }));
 
-  allCellKeys.length = 0;
-  allCellKeys.push(...cellEntries.map((entry) => entry.key));
+  filterSelectionState.allCellKeys.length = 0;
+  filterSelectionState.allCellKeys.push(...filterSelectionState.cellEntries.map((entry) => entry.key));
 
-  if (!initializedCellSelection) {
-    selectedCellKeys.clear();
-    allCellKeys.forEach((key) => selectedCellKeys.add(key));
-    initializedCellSelection = true;
+  if (!filterSelectionState.initializedCellSelection) {
+    filterSelectionState.selectedCellKeys.clear();
+    filterSelectionState.allCellKeys.forEach((key) => filterSelectionState.selectedCellKeys.add(key));
+    filterSelectionState.initializedCellSelection = true;
   } else {
-    const validKeys = new Set(allCellKeys);
-    [...selectedCellKeys].forEach((key) => {
-      if (!validKeys.has(key)) selectedCellKeys.delete(key);
+    const validKeys = new Set(filterSelectionState.allCellKeys);
+    [...filterSelectionState.selectedCellKeys].forEach((key) => {
+      if (!validKeys.has(key)) filterSelectionState.selectedCellKeys.delete(key);
     });
   }
 
@@ -979,15 +1004,15 @@ function rebuildCellFilterOptions() {
     const entry = matchedEntries[index];
     const tag = document.createElement("button");
     tag.type = "button";
-    tag.className = `filter-tag ${selectedCellKeys.has(entry.key) ? "active" : ""}`;
+    tag.className = `filter-tag ${filterSelectionState.selectedCellKeys.has(entry.key) ? "active" : ""}`;
     tag.textContent = getCellShortLabel(entry.key);
     tag.title = `${entry.label}`;
-    tag.setAttribute("aria-pressed", selectedCellKeys.has(entry.key) ? "true" : "false");
+    tag.setAttribute("aria-pressed", filterSelectionState.selectedCellKeys.has(entry.key) ? "true" : "false");
     tag.addEventListener("click", () => {
-      if (selectedCellKeys.has(entry.key)) {
-        selectedCellKeys.delete(entry.key);
+      if (filterSelectionState.selectedCellKeys.has(entry.key)) {
+        filterSelectionState.selectedCellKeys.delete(entry.key);
       } else {
-        selectedCellKeys.add(entry.key);
+        filterSelectionState.selectedCellKeys.add(entry.key);
       }
       rebuildCellFilterOptions();
       applyFilters();
@@ -1029,13 +1054,13 @@ function rebuildCellBadges() {
 }
 
 function applyUILanguage() {
-  const t = UI_TEXT[uiLanguage];
-  const htmlLang = uiLanguage === "en" ? "en" : "zh-CN";
+  const t = UI_TEXT[viewUiState.uiLanguage];
+  const htmlLang = viewUiState.uiLanguage === "en" ? "en" : "zh-CN";
   document.documentElement.lang = htmlLang;
   document.title = t.pageTitle;
   languageFinderText.textContent = "Language / 语言";
   quickLangButtons.forEach((button) => {
-    button.classList.toggle("active", button.dataset.uiLang === uiLanguage);
+    button.classList.toggle("active", button.dataset.uiLang === viewUiState.uiLanguage);
   });
 
   appTitle.textContent = t.appTitle;
@@ -1077,10 +1102,10 @@ function applyUILanguage() {
   updateDetailCoordToggleButton();
   if (detailExpandAllBtn) detailExpandAllBtn.textContent = t.detailExpandAllText;
   if (detailCollapseAllBtn) detailCollapseAllBtn.textContent = t.detailCollapseAllText;
-  toolbarToggleBtn.textContent = toolbarHidden ? t.showToolbarText : t.hideToolbarText;
-  detailToggleBtn.textContent = infoHidden ? t.showDetailsText : t.hideDetailsText;
+  toolbarToggleBtn.textContent = viewUiState.toolbarHidden ? t.showToolbarText : t.hideToolbarText;
+  detailToggleBtn.textContent = viewUiState.infoHidden ? t.showDetailsText : t.hideDetailsText;
   if (exportImageBtn) exportImageBtn.textContent = t.exportImageText;
-  setActiveToolbarTab(activeToolbarTab);
+  setActiveToolbarTab(viewUiState.activeToolbarTab);
   updateFullscreenButton();
   rebuildModelMultiList();
   rebuildCellFilterOptions();
@@ -1093,18 +1118,19 @@ function applyUILanguage() {
   applyFilters();
   renderModelDetails();
   updateViewControlsState();
-  if (hoveredMesh) {
-    showTooltip(lastPointerClient.x, lastPointerClient.y, getModelLabel(hoveredMesh.userData.model));
+  if (viewUiState.hoveredMesh) {
+    showTooltip(lastPointerClient.x, lastPointerClient.y, getModelLabel(viewUiState.hoveredMesh.userData.model));
   }
+  syncUrlState();
 }
 
 function updateDetailCoordToggleButton() {
   if (!detailCoordToggleBtn) return;
-  const t = UI_TEXT[uiLanguage];
-  detailCoordToggleBtn.textContent = detailTechnicalViewEnabled
+  const t = UI_TEXT[viewUiState.uiLanguage];
+  detailCoordToggleBtn.textContent = viewUiState.detailTechnicalViewEnabled
     ? t.detailHideTechnicalCoordsText
     : t.detailShowTechnicalCoordsText;
-  detailCoordToggleBtn.setAttribute("aria-pressed", detailTechnicalViewEnabled ? "true" : "false");
+  detailCoordToggleBtn.setAttribute("aria-pressed", viewUiState.detailTechnicalViewEnabled ? "true" : "false");
 }
 
 function updateDetailBulkActionButtons() {
@@ -1144,7 +1170,7 @@ function buildAxisEndpoint(position, color) {
 
 function buildAxis() {
   clearGroup(axisGroup);
-  const axisText = AXIS_TEXT_BY_LANG[uiLanguage];
+  const axisText = AXIS_TEXT_BY_LANG[viewUiState.uiLanguage];
 
   const axisColorX = 0xff8fa0;
   const axisColorY = 0x6eefd8;
@@ -1362,20 +1388,20 @@ function applyFilters() {
   visibleNodeMeshes = [];
   for (const mesh of nodeMeshes) {
     const { model, searchText } = mesh.userData;
-    const nameMatched = searchText.includes(keyword);
-    const multiMatched = selectedModelNames.has(model.name);
-    const cellMatched = selectedCellKeys.has(mesh.userData.cellKey);
+    const nameMatched = searchText.includes(filterSelectionState.keyword);
+    const multiMatched = filterSelectionState.selectedModelNames.has(model.name);
+    const cellMatched = filterSelectionState.selectedCellKeys.has(mesh.userData.cellKey);
     mesh.userData.searchMatched = nameMatched && multiMatched;
     mesh.visible = mesh.userData.searchMatched && cellMatched;
     if (mesh.visible) visibleNodeMeshes.push(mesh);
   }
 
-  if (selectedMesh && !selectedMesh.visible) {
+  if (viewUiState.selectedMesh && !viewUiState.selectedMesh.visible) {
     selectNode(null);
   }
 
-  if (hoveredMesh && !hoveredMesh.visible) {
-    hoveredMesh = null;
+  if (viewUiState.hoveredMesh && !viewUiState.hoveredMesh.visible) {
+    viewUiState.hoveredMesh = null;
     hideTooltip();
   }
 
@@ -1384,6 +1410,7 @@ function applyFilters() {
   refreshNeighborHighlights();
   refreshNodeStyles();
   updateViewControlsState();
+  syncUrlState();
 }
 
 function rebuildLinks() {
@@ -1430,20 +1457,20 @@ function rebuildLinks() {
 
 function refreshNeighborHighlights() {
   clearGroup(neighborLineGroup);
-  neighborMeshes = [];
+  viewUiState.neighborMeshes = [];
 
-  if (!neighborToggle.checked || !selectedMesh || !selectedMesh.visible) return;
+  if (!neighborToggle.checked || !viewUiState.selectedMesh || !viewUiState.selectedMesh.visible) return;
 
   const candidates = visibleNodeMeshes
-    .filter((mesh) => mesh !== selectedMesh && mesh.visible)
+    .filter((mesh) => mesh !== viewUiState.selectedMesh && mesh.visible)
     .map((mesh) => ({
       mesh,
-      distance: mesh.position.distanceTo(selectedMesh.position)
+      distance: mesh.position.distanceTo(viewUiState.selectedMesh.position)
     }))
     .sort((a, b) => a.distance - b.distance)
     .slice(0, NEIGHBOR_COUNT);
 
-  neighborMeshes = candidates.map((item) => item.mesh);
+  viewUiState.neighborMeshes = candidates.map((item) => item.mesh);
 
   const lineMaterial = new THREE.LineDashedMaterial({
     color: 0x8ef4e0,
@@ -1455,7 +1482,7 @@ function refreshNeighborHighlights() {
   });
 
   for (const candidate of candidates) {
-    const line = makeLine(selectedMesh.position, candidate.mesh.position, lineMaterial);
+    const line = makeLine(viewUiState.selectedMesh.position, candidate.mesh.position, lineMaterial);
     line.computeLineDistances();
     neighborLineGroup.add(line);
   }
@@ -1481,9 +1508,9 @@ function refreshNodeStyles() {
 
   for (const mesh of nodeMeshes) {
     const material = mesh.material;
-    const isHovered = mesh === hoveredMesh;
-    const isSelected = mesh === selectedMesh;
-    const isNeighbor = neighborMeshes.includes(mesh);
+    const isHovered = mesh === viewUiState.hoveredMesh;
+    const isSelected = mesh === viewUiState.selectedMesh;
+    const isNeighbor = viewUiState.neighborMeshes.includes(mesh);
     const isVisible = mesh.visible;
     const showDetailLabel = isVisible && (detailMode || isHovered || isSelected || isNeighbor);
     const showCompactLabel = isVisible && !showDetailLabel && compactLabelCandidates.has(mesh);
@@ -1498,7 +1525,7 @@ function refreshNodeStyles() {
     }
 
     const hasFocus = isSelected || isHovered || isNeighbor;
-    const hasActiveFocus = !!selectedMesh || !!hoveredMesh;
+    const hasActiveFocus = !!viewUiState.selectedMesh || !!viewUiState.hoveredMesh;
     const dimNonFocus = hasActiveFocus && !hasFocus;
 
     material.emissive.copy(mesh.userData.baseEmissive);
@@ -1563,8 +1590,8 @@ function onPointerMove(event) {
   lastPointerClient.y = event.clientY;
 
   if (event.target instanceof Element && event.target.closest(".panel, .view-dock")) {
-    if (hoveredMesh) {
-      hoveredMesh = null;
+    if (viewUiState.hoveredMesh) {
+      viewUiState.hoveredMesh = null;
       refreshNodeStyles();
     }
     hideTooltip();
@@ -1576,14 +1603,14 @@ function onPointerMove(event) {
   const intersects = raycaster.intersectObjects(visibleNodeMeshes, true);
   const nextHovered = pickModelMesh(intersects);
 
-  if (hoveredMesh !== nextHovered) {
-    hoveredMesh = nextHovered;
+  if (viewUiState.hoveredMesh !== nextHovered) {
+    viewUiState.hoveredMesh = nextHovered;
     refreshNodeStyles();
   }
 
-  if (hoveredMesh) {
+  if (viewUiState.hoveredMesh) {
     renderer.domElement.style.cursor = "pointer";
-    showTooltip(event.clientX, event.clientY, getModelLabel(hoveredMesh.userData.model));
+    showTooltip(event.clientX, event.clientY, getModelLabel(viewUiState.hoveredMesh.userData.model));
   } else {
     let hoveredCellBadge = null;
     if (isOverviewMode()) {
@@ -1621,9 +1648,9 @@ function onSceneClick(event) {
       const badgeIntersects = raycaster.intersectObjects(cellBadgeGroup.children, true);
       const cellBadge = pickCellBadge(badgeIntersects);
       if (cellBadge) {
-        selectedCellKeys.clear();
-        selectedCellKeys.add(cellBadge.userData.cellKey);
-        cellKeyword = "";
+        filterSelectionState.selectedCellKeys.clear();
+        filterSelectionState.selectedCellKeys.add(cellBadge.userData.cellKey);
+        filterSelectionState.cellKeyword = "";
         cellMultiSearchInput.value = "";
         rebuildCellFilterOptions();
         selectNode(null);
@@ -1637,34 +1664,152 @@ function onSceneClick(event) {
 }
 
 function selectNode(mesh) {
-  selectedMesh = mesh;
-  if (mesh && infoHidden && !isSimpleMode) setInfoHidden(false);
+  viewUiState.selectedMesh = mesh;
+  if (mesh && viewUiState.infoHidden && !isSimpleMode) setInfoHidden(false);
   refreshNeighborHighlights();
   refreshNodeStyles();
   renderModelDetails();
 }
 
-function renderModelDetails() {
-  const t = UI_TEXT[uiLanguage];
-  const axisText = AXIS_TEXT_BY_LANG[uiLanguage];
+function focusModelByName(modelName) {
+  const mesh = modelMeshByName.get(modelName);
+  if (!mesh) return;
 
-  if (!selectedMesh) {
+  filterSelectionState.keyword = "";
+  filterSelectionState.cellKeyword = "";
+  modelMultiSearchInput.value = "";
+  cellMultiSearchInput.value = "";
+  filterSelectionState.selectedModelNames.add(modelName);
+  filterSelectionState.selectedCellKeys.add(mesh.userData.cellKey);
+
+  rebuildModelMultiList();
+  rebuildCellFilterOptions();
+  applyFilters();
+  selectNode(mesh);
+}
+
+function buildExportFileName() {
+  const date = new Date().toISOString().slice(0, 10);
+  if (filterSelectionState.selectedCellKeys.size === 1
+    && filterSelectionState.allCellKeys.length > 1) {
+    const [cellKey] = [...filterSelectionState.selectedCellKeys];
+    return `modelspace-cell-${cellKey.replace(/\|/g, "-")}-${date}.png`;
+  }
+
+  const selectedModels = modelData
+    .filter((model) => filterSelectionState.selectedModelNames.has(model.name));
+  if (selectedModels.length > 0 && selectedModels.length < modelData.length) {
+    const categorySet = new Set(selectedModels.map((model) => model.category));
+    if (categorySet.size === 1) {
+      const [category] = [...categorySet];
+      return `modelspace-category-${String(category).toLowerCase()}-${date}.png`;
+    }
+  }
+
+  return `modelspace-${date}.png`;
+}
+
+function getVisibleModelsByCellKey(cellKey) {
+  return nodeMeshes
+    .filter((mesh) => mesh.visible && mesh.userData.cellKey === cellKey)
+    .map((mesh) => mesh.userData.model);
+}
+
+function toRelatedItems(models, limit = 8) {
+  const items = [];
+  const seen = new Set();
+  for (const model of models) {
+    if (!model?.name || seen.has(model.name)) continue;
+    seen.add(model.name);
+    items.push({
+      name: model.name,
+      label: model.name,
+      title: getModelLabel(model)
+    });
+    if (items.length >= limit) break;
+  }
+  return items;
+}
+
+function buildRelatedModelGroups(model, selectedCellKey, t) {
+  const sameCellModels = nodeMeshes
+    .map((mesh) => mesh.userData.model)
+    .filter((candidate) => candidate.name !== model.name && modelMeshByName.get(candidate.name)?.userData.cellKey === selectedCellKey);
+  const sameCellNames = new Set(sameCellModels.map((candidate) => candidate.name));
+
+  const sameCategoryModels = modelData
+    .filter((candidate) => candidate.category === model.category
+      && candidate.name !== model.name
+      && !sameCellNames.has(candidate.name));
+
+  const nearestModels = viewUiState.neighborMeshes.map((mesh) => mesh.userData.model);
+
+  const groups = [
+    { label: t.relatedSameCell, items: toRelatedItems(sameCellModels) },
+    { label: t.relatedSameCategory, items: toRelatedItems(sameCategoryModels) },
+    { label: t.relatedNearest, items: toRelatedItems(nearestModels, 4) }
+  ].filter((group) => group.items.length > 0);
+
+  return groups;
+}
+
+function renderModelDetails() {
+  const t = UI_TEXT[viewUiState.uiLanguage];
+  const axisText = AXIS_TEXT_BY_LANG[viewUiState.uiLanguage];
+
+  if (!viewUiState.selectedMesh) {
+    if (filterSelectionState.selectedCellKeys.size === 1) {
+      const [activeCellKey] = [...filterSelectionState.selectedCellKeys];
+      const activeCellModels = getVisibleModelsByCellKey(activeCellKey);
+      if (activeCellModels.length > 0) {
+        const typicalModel = chooseTypicalModel(activeCellModels);
+        const orderedModels = typicalModel
+          ? [
+              typicalModel,
+              ...activeCellModels
+                .filter((model) => model.name !== typicalModel.name)
+                .sort((a, b) => a.name.localeCompare(b.name))
+            ]
+          : [...activeCellModels].sort((a, b) => a.name.localeCompare(b.name));
+
+        renderCellFocusContent(modelContent, {
+          title: t.cellFocusTitle,
+          summaryLine: `${t.detailCell}: ${getCellShortLabel(activeCellKey)}`,
+          guideTitle: t.cellFocusGuideTitle,
+          guideRows: [
+            { label: t.detailCell, value: getCellShortLabel(activeCellKey) },
+            { label: t.cellFocusCountLabel, value: `${activeCellModels.length} ${t.cellCountUnit}` },
+            { label: t.cellFocusTypicalLabel, value: typicalModel ? getModelLabel(typicalModel) : t.detailNone }
+          ],
+          pathTitle: t.cellFocusPathTitle,
+          pathModels: orderedModels.map((model) => ({
+            name: model.name,
+            label: model.name,
+            title: getModelLabel(model)
+          })),
+          hintText: t.cellFocusHint,
+          detailNoneText: t.detailNone
+        });
+        updateDetailBulkActionButtons();
+        return;
+      }
+    }
     modelContent.textContent = t.modelPanelEmpty;
     updateDetailBulkActionButtons();
     return;
   }
 
-  const model = selectedMesh.userData.model;
+  const model = viewUiState.selectedMesh.userData.model;
   const xKey = getXBucketValue(model.x);
-  const spaceCell = getCellShortLabel(selectedMesh.userData.cellKey);
+  const spaceCell = getCellShortLabel(viewUiState.selectedMesh.userData.cellKey);
   const displayName = getModelLabel(model);
   const categoryText = t.categoryLabels[model.category] ?? model.category;
-  const neighborText = neighborMeshes.map((m) => getModelLabel(m.userData.model)).join(" / ") || t.detailNone;
+  const neighborText = viewUiState.neighborMeshes.map((m) => getModelLabel(m.userData.model)).join(" / ") || t.detailNone;
   const xAxisText = toAxisSingleLine(axisText.x[xKey]);
   const yAxisText = toAxisSingleLine(axisText.y[String(model.y)]);
   const zAxisText = toAxisSingleLine(axisText.z[String(model.z)]);
-  const descriptionText = uiLanguage === "en" ? (model.descriptionEn ?? model.description) : model.description;
-  const tags = uiLanguage === "en" ? (model.tagsEn ?? model.tags) : model.tags;
+  const descriptionText = viewUiState.uiLanguage === "en" ? (model.descriptionEn ?? model.description) : model.description;
+  const tags = viewUiState.uiLanguage === "en" ? (model.tagsEn ?? model.tags) : model.tags;
   const evaluation = model.evaluation || null;
   const referencePayload = buildModelReferencePayload(model, t);
   const evidencePackKey = evaluation?.evidencePack || "-";
@@ -1693,7 +1838,7 @@ function renderModelDetails() {
     { label: t.detailY, value: yAxisText },
     { label: t.detailZ, value: zAxisText }
   ];
-  if (detailTechnicalViewEnabled) {
+  if (viewUiState.detailTechnicalViewEnabled) {
     rawOverviewRows.push({
       label: t.detailCoord,
       value: `(${model.x}, ${model.y}, ${model.z})`
@@ -1716,7 +1861,7 @@ function renderModelDetails() {
   appendJudgementRow(t.judgementGates, evaluation?.gates || "-");
   appendJudgementRow(t.judgementReason, evaluation?.reason || "-");
 
-  if (detailTechnicalViewEnabled) {
+  if (viewUiState.detailTechnicalViewEnabled) {
     appendJudgementRow(t.judgementEvidencePack, evidencePackKey);
     appendJudgementRow(t.judgementEvidenceSources, evidenceSources);
     appendJudgementRow(t.judgementStandardVersion, evaluation?.standardVersion || "-");
@@ -1724,6 +1869,7 @@ function renderModelDetails() {
   }
 
   const summaryLine = descriptionText && String(descriptionText).trim() ? descriptionText.trim() : null;
+  const relatedGroups = buildRelatedModelGroups(model, viewUiState.selectedMesh.userData.cellKey, t);
 
   renderModelDetailsContent(modelContent, {
     displayName,
@@ -1742,7 +1888,10 @@ function renderModelDetails() {
     judgementRows,
     referenceTitle: referencePayload.title,
     referenceSections: referencePayload.sections,
-    referenceLinks: referencePayload.links
+    referenceLinks: referencePayload.links,
+    relatedTitle: t.detailRelatedTitle,
+    relatedGroups,
+    relatedHint: t.relatedJumpHint
   });
   updateDetailBulkActionButtons();
 }
@@ -1764,14 +1913,14 @@ function fitCameraToCognitiveSpace() {
   const distanceForWidth = size.x / (2 * Math.tan(fov / 2) * camera.aspect);
   const distance = Math.max(distanceForHeight, distanceForWidth) + size.z * 0.58;
 
-  baseCameraCenter.copy(center);
-  baseCameraDistance = distance;
+  viewUiState.baseCameraCenter.copy(center);
+  viewUiState.baseCameraDistance = distance;
   controls.minDistance = Math.max(28, distance * 0.45);
   controls.maxDistance = distance * 3.8;
   camera.near = 0.1;
   camera.far = Math.max(1000, distance * 10);
   camera.updateProjectionMatrix();
-  focusCameraOnView(activeCameraView, { keepSelection: true });
+  focusCameraOnView(viewUiState.activeCameraView, { keepSelection: true });
 }
 
 function updatePointer(event) {
@@ -1815,14 +1964,14 @@ function hideTooltip() {
 }
 
 function setToolbarHidden(hidden) {
-  toolbarHidden = hidden;
+  viewUiState.toolbarHidden = hidden;
   document.body.classList.toggle("toolbar-hidden", hidden);
   controlsPanel?.setAttribute("aria-hidden", hidden ? "true" : "false");
   toolbarToggleBtn.textContent = hidden ? getUIText("showToolbarText") : getUIText("hideToolbarText");
 }
 
 function setInfoHidden(hidden) {
-  infoHidden = hidden;
+  viewUiState.infoHidden = hidden;
   document.body.classList.toggle("info-hidden", hidden);
   infoPanel?.setAttribute("aria-hidden", hidden ? "true" : "false");
   detailToggleBtn.textContent = hidden ? getUIText("showDetailsText") : getUIText("hideDetailsText");

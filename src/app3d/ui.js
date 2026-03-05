@@ -92,6 +92,9 @@ export function renderModelDetailsContent(modelContent, payload) {
     referenceTitle,
     referenceSections,
     referenceLinks,
+    relatedTitle,
+    relatedGroups,
+    relatedHint,
     detailNoneText,
     sectionEmptyText
   } = payload;
@@ -305,6 +308,43 @@ export function renderModelDetailsContent(modelContent, payload) {
   });
   }
 
+  const hasRelatedGroups = Array.isArray(relatedGroups) && relatedGroups.some((group) => group.items?.length > 0);
+  if (hasRelatedGroups) {
+    appendAccordionSection(relatedTitle, { expanded: false, className: "related-card" }, (panel) => {
+      for (const group of relatedGroups) {
+        if (!group.items || group.items.length === 0) continue;
+        const sectionEl = document.createElement("div");
+        sectionEl.className = "resource-section";
+
+        const label = document.createElement("div");
+        label.className = "explain-key";
+        label.textContent = group.label;
+        sectionEl.appendChild(label);
+
+        const actionList = document.createElement("div");
+        actionList.className = "model-action-list";
+        for (const item of group.items) {
+          const actionButton = document.createElement("button");
+          actionButton.type = "button";
+          actionButton.className = "model-action-btn";
+          actionButton.dataset.modelName = item.name;
+          actionButton.textContent = item.label || item.name;
+          if (item.title) actionButton.title = item.title;
+          actionList.appendChild(actionButton);
+        }
+        sectionEl.appendChild(actionList);
+        panel.appendChild(sectionEl);
+      }
+
+      if (relatedHint) {
+        const hint = document.createElement("div");
+        hint.className = "explain-value";
+        hint.textContent = relatedHint;
+        panel.appendChild(hint);
+      }
+    });
+  }
+
   const hasTags = Array.isArray(tags) && tags.length > 0;
   if (hasTags) {
     appendAccordionSection(tagsTitle, { expanded: false, className: "tag-card" }, (panel) => {
@@ -335,4 +375,90 @@ export function renderModelDetailsContent(modelContent, payload) {
       event.preventDefault();
     });
   });
+}
+
+export function renderCellFocusContent(modelContent, payload) {
+  const {
+    title,
+    summaryLine,
+    guideTitle,
+    guideRows,
+    pathTitle,
+    pathModels,
+    hintText,
+    detailNoneText
+  } = payload;
+
+  const fallbackNone = detailNoneText || "-";
+  modelContent.replaceChildren();
+
+  const titleEl = document.createElement("h3");
+  titleEl.className = "model-name";
+  titleEl.textContent = title || fallbackNone;
+  modelContent.appendChild(titleEl);
+
+  if (summaryLine && String(summaryLine).trim()) {
+    const summary = document.createElement("p");
+    summary.className = "model-summary";
+    summary.textContent = summaryLine.trim();
+    modelContent.appendChild(summary);
+  }
+
+  const guideCard = document.createElement("section");
+  guideCard.className = "explain-card overview-card";
+
+  const guideHeader = document.createElement("div");
+  guideHeader.className = "explain-title";
+  guideHeader.textContent = guideTitle || fallbackNone;
+  guideCard.appendChild(guideHeader);
+
+  const guideGrid = document.createElement("div");
+  guideGrid.className = "overview-grid";
+  for (const row of guideRows || []) {
+    const item = document.createElement("div");
+    item.className = "overview-item";
+
+    const key = document.createElement("div");
+    key.className = "explain-key";
+    key.textContent = row.label || fallbackNone;
+    item.appendChild(key);
+
+    const value = document.createElement("div");
+    value.className = "overview-value";
+    value.textContent = row.value || fallbackNone;
+    item.appendChild(value);
+    guideGrid.appendChild(item);
+  }
+  guideCard.appendChild(guideGrid);
+  modelContent.appendChild(guideCard);
+
+  const pathCard = document.createElement("section");
+  pathCard.className = "explain-card related-card";
+
+  const pathHeader = document.createElement("div");
+  pathHeader.className = "explain-title";
+  pathHeader.textContent = pathTitle || fallbackNone;
+  pathCard.appendChild(pathHeader);
+
+  const actionList = document.createElement("div");
+  actionList.className = "model-action-list";
+  for (const modelItem of pathModels || []) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "model-action-btn";
+    button.dataset.modelName = modelItem.name;
+    button.textContent = modelItem.label || modelItem.name;
+    if (modelItem.title) button.title = modelItem.title;
+    actionList.appendChild(button);
+  }
+  pathCard.appendChild(actionList);
+
+  if (hintText) {
+    const hint = document.createElement("div");
+    hint.className = "explain-value";
+    hint.textContent = hintText;
+    pathCard.appendChild(hint);
+  }
+
+  modelContent.appendChild(pathCard);
 }

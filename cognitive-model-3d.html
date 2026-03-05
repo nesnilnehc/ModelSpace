@@ -125,6 +125,14 @@
       box-shadow: inset 0 0 0 1px rgba(184, 218, 255, 0.35);
     }
 
+    body.embed-mode .global-language,
+    body.embed-mode #toolbarToggleBtn,
+    body.embed-mode #detailToggleBtn,
+    body.embed-mode #exportImageBtn,
+    body.embed-mode #fullscreenToggleBtn {
+      display: none;
+    }
+
     body.toolbar-hidden #overlay .controls,
     body.info-hidden #overlay .info {
       opacity: 0;
@@ -800,6 +808,11 @@
       background: rgba(9, 24, 31, 0.58);
     }
 
+    .related-card {
+      border-color: rgba(145, 201, 255, 0.36);
+      background: rgba(10, 22, 40, 0.62);
+    }
+
     .resource-section {
       margin-top: 10px;
       display: grid;
@@ -849,6 +862,31 @@
     .resource-link:hover {
       border-color: rgba(162, 246, 228, 0.82);
       background: rgba(24, 84, 84, 0.74);
+    }
+
+    .model-action-list {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .model-action-btn {
+      border: 1px solid rgba(146, 186, 255, 0.48);
+      border-radius: 999px;
+      padding: 4px 10px;
+      color: #dbe8ff;
+      font-size: 0.76rem;
+      letter-spacing: 0.02em;
+      background: rgba(22, 40, 74, 0.64);
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+    }
+
+    .model-action-btn:hover {
+      border-color: rgba(170, 211, 255, 0.86);
+      background: rgba(34, 58, 104, 0.82);
+      color: #f1f7ff;
     }
 
     .tag-card .pill-row {
