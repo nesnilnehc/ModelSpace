@@ -87,9 +87,9 @@ CRITICAL - THREE ORTHOGONAL AXES:
 - Three straight lines meeting at ONE point (origin). Origin = 现在(Present) × 元认知层(Meta-Cognition) × 元模型(Meta Model).
 - X axis: horizontal. Labels: 过去(-1) — 现在(0) — 未来(1)
 - Y axis: 元认知(4) at origin — 战略(3) — 结构(2) — 表达(1). 元认知 intersects with 现在.
-- Z axis: 元模型(4) at origin — 原则(3) — 方法(2) — 工具(1). 元模型 intersects with 现在.
+- Z axis: extends INWARD (into depth, away from viewer). 元模型(4) at origin (front) — 原则(3) — 方法(2) — 工具(1) toward back.
 
-At origin: 现在 × 元认知 × 元模型. Order along Y from origin outward: 元认知→战略→结构→表达. Order along Z: 元模型→原则→方法→工具.
+At origin: 现在 × 元认知 × 元模型. Y outward; Z inward so MECE and OKR are clearly inside the space.
 
 Model examples:
 - MECE at (0, 2, 3) - point on the grid
