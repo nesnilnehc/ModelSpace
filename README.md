@@ -18,7 +18,7 @@ A frontend-only 3D visualization of cognitive models, mapping them along **X (ti
 - **Shareable state**: URL query keeps language, view, filters, and panel state for sharing
 - **Embed mode**: Lightweight embedded entry (`embed.html`)
 - **i18n**: Chinese and English support
-- **CI validation**: GitHub Actions workflow runs model-data validation + smoke E2E on push/PR
+- **CI validation**: GitHub Actions workflow runs model-data validation + E2E regression + perf budget on push/PR
 
 ---
 
@@ -71,8 +71,11 @@ No build step needed. The project uses relative paths, so it runs correctly unde
 # Validate model data (same as CI)
 node scripts/validate-model-data.mjs
 
-# Run smoke E2E checks (page load, i18n, filters, export hook)
+# Run E2E regression checks (i18n, filters, cell focus, related jumps, URL restore, embed, export)
 npm run smoke:e2e
+
+# Run perf budget baseline on 100+ nodes (first-screen, FPS, export latency)
+npm run perf:budget
 
 # Export promo image for README (start server first, e.g. python3 -m http.server 8080)
 npm run export-promo
@@ -92,7 +95,7 @@ To update the promo image: run `npm run export-promo` (with the server running o
 | `data/model-library.js` | Model data, evidence bundles, references |
 | `src/app.js` | Main app logic (render, filters, details, i18n) |
 | `src/layout.js` | Layout engine (coordinates, labels) |
-| `src/app3d/*.js` | Reusable modules (i18n, filters, scene, UI) |
+| `src/app3d/*.js` | Reusable modules (i18n, filters, scene, interaction, export, URL state, detail orchestration) |
 | `scripts/validate-model-data.mjs` | Data validation script |
 | `docs/` | Classification standards, architecture, design docs |
 
@@ -104,7 +107,7 @@ See [docs/project-overview/project-file-map.md](docs/project-overview/project-fi
 
 1. Fork the repository
 2. Create a feature branch
-3. Run `node scripts/validate-model-data.mjs` and `npm run smoke:e2e` before committing
+3. Run `node scripts/validate-model-data.mjs`, `npm run smoke:e2e`, and `npm run perf:budget` before committing
 4. Open a pull request
 
 ---

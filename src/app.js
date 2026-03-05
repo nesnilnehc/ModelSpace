@@ -25,6 +25,8 @@ import {
 } from "./app3d/ui.js";
 import { bindAppInteractionEvents } from "./app3d/interaction.js";
 import { createExportService } from "./app3d/export.js";
+import { parseUrlStateFromQuery, createUrlStateController } from "./app3d/url-state.js";
+import { createDetailOrchestrator } from "./app3d/details.js";
 const modelData = window.ModelLayout
   .buildModelData(window.MODEL_LIBRARY_ROWS)
   .filter((model) => model?.evaluation?.stageA !== "不纳入");
@@ -36,6 +38,7 @@ const categoryColorMap = {
   Strategy: 0x84f4b4,
   Meta: 0xd2a0ff
 };
+const CATEGORY_ORDER = ["Expression", "Structure", "Diagnosis", "Strategy", "Meta"];
 
 const TYPICAL_MODEL_PRIORITY = {
   Expression: ["SCQA", "PREP", "STAR", "AIDA", "Elevator Pitch"],
@@ -70,6 +73,8 @@ const modelMultiList = document.getElementById("modelMultiList");
 const modelMultiSelectVisibleBtn = document.getElementById("modelMultiSelectVisibleBtn");
 const modelMultiSelectAllBtn = document.getElementById("modelMultiSelectAllBtn");
 const modelMultiClearBtn = document.getElementById("modelMultiClearBtn");
+const modelMultiExpandGroupsBtn = document.getElementById("modelMultiExpandGroupsBtn");
+const modelMultiCollapseGroupsBtn = document.getElementById("modelMultiCollapseGroupsBtn");
 const cellMultiSearchInput = document.getElementById("cellMultiSearchInput");
 const cellMultiSummary = document.getElementById("cellMultiSummary");
 const cellMultiList = document.getElementById("cellMultiList");
@@ -126,7 +131,7 @@ const quickLangButtons = document.querySelectorAll("[data-ui-lang]");
 
 const filterSelectionState = createFilterSelectionState(modelData);
 const viewUiState = createViewUiState({ defaultLanguage: "zh" });
-const initialUrlState = parseUrlStateFromQuery();
+const initialUrlState = parseUrlStateFromQuery(window.location.search);
 const defaultViewDirection = new THREE.Vector3(1.22, 0.96, 1.18).normalize();
 const promoViewDirection = new THREE.Vector3(1.15, 1.02, 1.12).normalize();
 const CAMERA_VIEW_DIRECTIONS = {
@@ -137,7 +142,6 @@ const CAMERA_VIEW_DIRECTIONS = {
   z: new THREE.Vector3(0.04, 0.08, 1).normalize()
 };
 viewUiState.baseCameraCenter = new THREE.Vector3(0, 0, 0);
-let suppressUrlSync = false;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0a1220);
@@ -204,6 +208,50 @@ const { getExportDataUrl, exportCanvasImage } = createExportService({
   toWorldZ,
   visualConfig: VISUAL_CONFIG
 });
+const urlStateController = createUrlStateController({
+  windowRef: window,
+  cameraViewDirections: CAMERA_VIEW_DIRECTIONS,
+  modelData,
+  modelMeshByName,
+  filterSelectionState,
+  viewUiState,
+  linkToggle,
+  pyramidToggle,
+  neighborToggle,
+  modelMultiSearchInput,
+  cellMultiSearchInput,
+  setToolbarHidden,
+  setInfoHidden,
+  setActiveToolbarTab,
+  applyUILanguage,
+  rebuildCellFilterOptions,
+  applyFilters,
+  focusCameraOnView,
+  sortCellKey
+});
+const detailOrchestrator = createDetailOrchestrator({
+  windowRef: window,
+  modelContent,
+  modelData,
+  nodeMeshes,
+  filterSelectionState,
+  viewUiState,
+  uiTextByLang: UI_TEXT,
+  axisTextByLang: AXIS_TEXT_BY_LANG,
+  renderModelDetailsContent,
+  renderCellFocusContent,
+  getVisibleModelsByCellKey,
+  chooseTypicalModel,
+  getModelLabel,
+  getCellShortLabel,
+  getXBucketValue,
+  toAxisSingleLine,
+  buildModelReferencePayload,
+  updateDetailBulkActionButtons
+});
+const renderModelDetails = () => {
+  detailOrchestrator.renderModelDetails();
+};
 
 buildNodes();
 
@@ -222,7 +270,7 @@ if (isSimpleMode) {
 }
 
 applyUILanguage();
-applyUrlState(initialUrlState);
+urlStateController.applyUrlState(initialUrlState);
 rebuildLinks();
 
 bindAppInteractionEvents({
@@ -234,6 +282,8 @@ bindAppInteractionEvents({
     modelMultiSelectVisibleBtn,
     modelMultiSelectAllBtn,
     modelMultiClearBtn,
+    modelMultiExpandGroupsBtn,
+    modelMultiCollapseGroupsBtn,
     cellMultiSearchInput,
     cellMultiSelectVisibleBtn,
     cellMultiSelectAllBtn,
@@ -259,16 +309,16 @@ bindAppInteractionEvents({
   callbacks: {
     onLinkToggleChange: () => {
       rebuildLinks();
-      syncUrlState();
+      urlStateController.syncUrlState();
     },
     onPyramidToggleChange: () => {
       pyramidGroup.visible = pyramidToggle.checked;
-      syncUrlState();
+      urlStateController.syncUrlState();
     },
     onNeighborToggleChange: () => {
       refreshNeighborHighlights();
       refreshNodeStyles();
-      syncUrlState();
+      urlStateController.syncUrlState();
     },
     onModelSearchInput: (event) => {
       filterSelectionState.keyword = event.target.value.trim().toLowerCase();
@@ -280,6 +330,18 @@ bindAppInteractionEvents({
       candidates.forEach((model) => filterSelectionState.selectedModelNames.add(model.name));
       refreshModelMultiChecks();
       applyFilters();
+    },
+    onModelExpandGroups: () => {
+      CATEGORY_ORDER.forEach((category) => {
+        filterSelectionState.collapsedModelCategories.set(category, false);
+      });
+      rebuildModelMultiList();
+    },
+    onModelCollapseGroups: () => {
+      CATEGORY_ORDER.forEach((category) => {
+        filterSelectionState.collapsedModelCategories.set(category, true);
+      });
+      rebuildModelMultiList();
     },
     onModelSelectAll: () => {
       filterSelectionState.selectedModelNames.clear();
@@ -324,11 +386,11 @@ bindAppInteractionEvents({
     },
     onToolbarToggle: () => {
       setToolbarHidden(!viewUiState.toolbarHidden);
-      syncUrlState();
+      urlStateController.syncUrlState();
     },
     onDetailToggle: () => {
       setInfoHidden(!viewUiState.infoHidden);
-      syncUrlState();
+      urlStateController.syncUrlState();
     },
     onDetailCoordToggle: () => {
       viewUiState.detailTechnicalViewEnabled = !viewUiState.detailTechnicalViewEnabled;
@@ -354,7 +416,7 @@ bindAppInteractionEvents({
     },
     onOverviewMode: () => {
       enterOverviewMode({ resetCamera: true });
-      syncUrlState();
+      urlStateController.syncUrlState();
     },
     onViewReset: () => {
       focusCameraOnView("default");
@@ -391,126 +453,10 @@ bindAppInteractionEvents({
 
 if (typeof window !== "undefined") {
   window.__getPromoExportDataUrl = getExportDataUrl;
+  window.__focusModelByName = focusModelByName;
 }
 
 animate();
-
-function parseUrlStateFromQuery() {
-  if (typeof window === "undefined") return {};
-  const params = new URLSearchParams(window.location.search);
-  const parseList = (raw, separator) => {
-    if (!raw) return [];
-    return raw
-      .split(separator)
-      .map((item) => item.trim())
-      .filter(Boolean);
-  };
-
-  return {
-    lang: params.get("lang") || "",
-    view: params.get("view") || "",
-    models: parseList(params.get("models"), ","),
-    cells: parseList(params.get("cells"), ";"),
-    keyword: params.get("q") || "",
-    cellKeyword: params.get("cq") || "",
-    link: params.get("link"),
-    grid: params.get("grid"),
-    neighbor: params.get("neighbor"),
-    toolbar: params.get("toolbar"),
-    detail: params.get("detail"),
-    tab: params.get("tab") || ""
-  };
-}
-
-function applyUrlState(state) {
-  if (!state || typeof state !== "object") return;
-  suppressUrlSync = true;
-  try {
-    if (state.lang === "zh" || state.lang === "en") {
-      viewUiState.uiLanguage = state.lang;
-    }
-
-    if (state.link === "0") linkToggle.checked = false;
-    if (state.grid === "0") pyramidToggle.checked = false;
-    if (state.neighbor === "0") neighborToggle.checked = false;
-    if (state.toolbar === "0") setToolbarHidden(true);
-    if (state.detail === "0") setInfoHidden(true);
-    if (state.tab) setActiveToolbarTab(state.tab);
-
-    if (Array.isArray(state.models) && state.models.length > 0) {
-      filterSelectionState.selectedModelNames.clear();
-      state.models.forEach((name) => {
-        if (modelMeshByName.has(name)) {
-          filterSelectionState.selectedModelNames.add(name);
-        }
-      });
-    }
-
-    if (state.keyword) {
-      filterSelectionState.keyword = state.keyword.toLowerCase();
-      modelMultiSearchInput.value = state.keyword;
-    }
-    if (state.cellKeyword) {
-      filterSelectionState.cellKeyword = state.cellKeyword.toLowerCase();
-      cellMultiSearchInput.value = state.cellKeyword;
-    }
-
-    applyUILanguage();
-
-    if (Array.isArray(state.cells) && state.cells.length > 0) {
-      const validCellKeys = new Set(filterSelectionState.allCellKeys);
-      filterSelectionState.selectedCellKeys.clear();
-      state.cells.forEach((cellKey) => {
-        if (validCellKeys.has(cellKey)) filterSelectionState.selectedCellKeys.add(cellKey);
-      });
-      if (filterSelectionState.selectedCellKeys.size === 0) {
-        filterSelectionState.allCellKeys.forEach((cellKey) => filterSelectionState.selectedCellKeys.add(cellKey));
-      }
-      rebuildCellFilterOptions();
-      applyFilters();
-    }
-
-    if (state.view && CAMERA_VIEW_DIRECTIONS[state.view]) {
-      focusCameraOnView(state.view, { keepSelection: true });
-    }
-  } finally {
-    suppressUrlSync = false;
-    syncUrlState();
-  }
-}
-
-function syncUrlState() {
-  if (suppressUrlSync || typeof window === "undefined") return;
-  const params = new URLSearchParams();
-
-  if (viewUiState.uiLanguage !== "zh") params.set("lang", viewUiState.uiLanguage);
-  if (viewUiState.activeCameraView !== "default") params.set("view", viewUiState.activeCameraView);
-  if (viewUiState.activeToolbarTab !== "models") params.set("tab", viewUiState.activeToolbarTab);
-
-  if (!linkToggle.checked) params.set("link", "0");
-  if (!pyramidToggle.checked) params.set("grid", "0");
-  if (!neighborToggle.checked) params.set("neighbor", "0");
-  if (viewUiState.toolbarHidden) params.set("toolbar", "0");
-  if (viewUiState.infoHidden) params.set("detail", "0");
-
-  if (filterSelectionState.keyword) params.set("q", filterSelectionState.keyword);
-  if (filterSelectionState.cellKeyword) params.set("cq", filterSelectionState.cellKeyword);
-
-  if (filterSelectionState.selectedModelNames.size > 0
-    && filterSelectionState.selectedModelNames.size < modelData.length) {
-    params.set("models", [...filterSelectionState.selectedModelNames].sort().join(","));
-  }
-
-  if (filterSelectionState.allCellKeys.length > 0
-    && filterSelectionState.selectedCellKeys.size > 0
-    && filterSelectionState.selectedCellKeys.size < filterSelectionState.allCellKeys.length) {
-    params.set("cells", [...filterSelectionState.selectedCellKeys].sort(sortCellKey).join(";"));
-  }
-
-  const query = params.toString();
-  const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
-  window.history.replaceState(null, "", nextUrl);
-}
 
 function getUIText(key) {
   return UI_TEXT[viewUiState.uiLanguage][key];
@@ -598,7 +544,7 @@ function setActiveToolbarTab(tabName) {
   toolbarTabPanels.forEach((panel) => {
     panel.classList.toggle("active", panel.dataset.toolbarPanel === nextTab);
   });
-  syncUrlState();
+  urlStateController.syncUrlState();
 }
 
 function isOverviewMode() {
@@ -644,7 +590,7 @@ function focusCameraOnView(viewKey, options = {}) {
   }
   refreshNodeStyles();
   updateViewControlsState();
-  syncUrlState();
+  urlStateController.syncUrlState();
 }
 
 function enterOverviewMode(options = {}) {
@@ -805,32 +751,88 @@ function getKeywordMatchedModels() {
 
 function rebuildModelMultiList() {
   modelMultiList.innerHTML = "";
+  const t = UI_TEXT[viewUiState.uiLanguage];
   const matched = getKeywordMatchedModels();
   if (!matched.length) {
     const empty = document.createElement("div");
     empty.className = "model-multi-empty";
-    empty.textContent = UI_TEXT[viewUiState.uiLanguage].modelMultiNoResult;
+    empty.textContent = t.modelMultiNoResult;
     modelMultiList.appendChild(empty);
   }
 
-  for (let index = 0; index < matched.length; index++) {
-    const model = matched[index];
-    const tag = document.createElement("button");
-    tag.type = "button";
-    tag.className = `filter-tag ${filterSelectionState.selectedModelNames.has(model.name) ? "active" : ""}`;
-    tag.textContent = model.name;
-    tag.title = getModelLabel(model);
-    tag.setAttribute("aria-pressed", filterSelectionState.selectedModelNames.has(model.name) ? "true" : "false");
-    tag.addEventListener("click", () => {
-      if (filterSelectionState.selectedModelNames.has(model.name)) {
-        filterSelectionState.selectedModelNames.delete(model.name);
-      } else {
-        filterSelectionState.selectedModelNames.add(model.name);
-      }
+  const grouped = new Map();
+  CATEGORY_ORDER.forEach((category) => grouped.set(category, []));
+  matched.forEach((model) => {
+    if (!grouped.has(model.category)) grouped.set(model.category, []);
+    grouped.get(model.category).push(model);
+  });
+
+  const extraCategories = [...grouped.keys()]
+    .filter((category) => !CATEGORY_ORDER.includes(category))
+    .sort((a, b) => a.localeCompare(b));
+  const categoriesToRender = [
+    ...CATEGORY_ORDER.filter((category) => grouped.get(category)?.length > 0),
+    ...extraCategories.filter((category) => grouped.get(category)?.length > 0)
+  ];
+  const forceExpand = Boolean(filterSelectionState.keyword);
+
+  for (const category of categoriesToRender) {
+    const categoryModels = grouped.get(category) || [];
+    if (!filterSelectionState.collapsedModelCategories.has(category)) {
+      filterSelectionState.collapsedModelCategories.set(category, true);
+    }
+    const collapsed = forceExpand ? false : filterSelectionState.collapsedModelCategories.get(category) !== false;
+    const selectedCount = categoryModels
+      .filter((model) => filterSelectionState.selectedModelNames.has(model.name))
+      .length;
+
+    const groupSection = document.createElement("section");
+    groupSection.className = `model-group ${collapsed ? "collapsed" : ""}`.trim();
+
+    const groupToggle = document.createElement("button");
+    groupToggle.type = "button";
+    groupToggle.className = "model-group-toggle";
+    groupToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    groupToggle.title = collapsed ? t.modelMultiGroupExpandTitle : t.modelMultiGroupCollapseTitle;
+    groupToggle.addEventListener("click", () => {
+      const nextCollapsed = !filterSelectionState.collapsedModelCategories.get(category);
+      filterSelectionState.collapsedModelCategories.set(category, nextCollapsed);
       rebuildModelMultiList();
-      applyFilters();
     });
-    modelMultiList.appendChild(tag);
+
+    const groupTitle = document.createElement("span");
+    groupTitle.className = "model-group-title";
+    groupTitle.textContent = t.categoryLabels[category] ?? category;
+
+    const groupSummary = document.createElement("span");
+    groupSummary.className = "model-group-summary";
+    groupSummary.textContent = `${t.modelMultiGroupSelected} ${selectedCount}/${categoryModels.length}`;
+
+    groupToggle.append(groupTitle, groupSummary);
+    groupSection.appendChild(groupToggle);
+
+    const groupContent = document.createElement("div");
+    groupContent.className = "model-group-content";
+    categoryModels.forEach((model) => {
+      const tag = document.createElement("button");
+      tag.type = "button";
+      tag.className = `filter-tag ${filterSelectionState.selectedModelNames.has(model.name) ? "active" : ""}`;
+      tag.textContent = model.name;
+      tag.title = getModelLabel(model);
+      tag.setAttribute("aria-pressed", filterSelectionState.selectedModelNames.has(model.name) ? "true" : "false");
+      tag.addEventListener("click", () => {
+        if (filterSelectionState.selectedModelNames.has(model.name)) {
+          filterSelectionState.selectedModelNames.delete(model.name);
+        } else {
+          filterSelectionState.selectedModelNames.add(model.name);
+        }
+        rebuildModelMultiList();
+        applyFilters();
+      });
+      groupContent.appendChild(tag);
+    });
+    groupSection.appendChild(groupContent);
+    modelMultiList.appendChild(groupSection);
   }
   modelMultiSummary.textContent = getModelMultiSummaryText();
 }
@@ -1080,6 +1082,8 @@ function applyUILanguage() {
   modelMultiSelectVisibleBtn.textContent = t.modelMultiSelectVisible;
   modelMultiSelectAllBtn.textContent = t.modelMultiSelectAll;
   modelMultiClearBtn.textContent = t.modelMultiClear;
+  if (modelMultiExpandGroupsBtn) modelMultiExpandGroupsBtn.textContent = t.modelMultiExpandGroups;
+  if (modelMultiCollapseGroupsBtn) modelMultiCollapseGroupsBtn.textContent = t.modelMultiCollapseGroups;
   cellFilterLabel.textContent = t.cellFilterLabel;
   cellMultiSearchInput.placeholder = t.cellMultiSearchPlaceholder;
   cellMultiSelectVisibleBtn.textContent = t.cellMultiSelectVisible;
@@ -1121,7 +1125,7 @@ function applyUILanguage() {
   if (viewUiState.hoveredMesh) {
     showTooltip(lastPointerClient.x, lastPointerClient.y, getModelLabel(viewUiState.hoveredMesh.userData.model));
   }
-  syncUrlState();
+  urlStateController.syncUrlState();
 }
 
 function updateDetailCoordToggleButton() {
@@ -1409,8 +1413,9 @@ function applyFilters() {
   rebuildCellBadges();
   refreshNeighborHighlights();
   refreshNodeStyles();
+  renderModelDetails();
   updateViewControlsState();
-  syncUrlState();
+  urlStateController.syncUrlState();
 }
 
 function rebuildLinks() {
@@ -1713,187 +1718,6 @@ function getVisibleModelsByCellKey(cellKey) {
   return nodeMeshes
     .filter((mesh) => mesh.visible && mesh.userData.cellKey === cellKey)
     .map((mesh) => mesh.userData.model);
-}
-
-function toRelatedItems(models, limit = 8) {
-  const items = [];
-  const seen = new Set();
-  for (const model of models) {
-    if (!model?.name || seen.has(model.name)) continue;
-    seen.add(model.name);
-    items.push({
-      name: model.name,
-      label: model.name,
-      title: getModelLabel(model)
-    });
-    if (items.length >= limit) break;
-  }
-  return items;
-}
-
-function buildRelatedModelGroups(model, selectedCellKey, t) {
-  const sameCellModels = nodeMeshes
-    .map((mesh) => mesh.userData.model)
-    .filter((candidate) => candidate.name !== model.name && modelMeshByName.get(candidate.name)?.userData.cellKey === selectedCellKey);
-  const sameCellNames = new Set(sameCellModels.map((candidate) => candidate.name));
-
-  const sameCategoryModels = modelData
-    .filter((candidate) => candidate.category === model.category
-      && candidate.name !== model.name
-      && !sameCellNames.has(candidate.name));
-
-  const nearestModels = viewUiState.neighborMeshes.map((mesh) => mesh.userData.model);
-
-  const groups = [
-    { label: t.relatedSameCell, items: toRelatedItems(sameCellModels) },
-    { label: t.relatedSameCategory, items: toRelatedItems(sameCategoryModels) },
-    { label: t.relatedNearest, items: toRelatedItems(nearestModels, 4) }
-  ].filter((group) => group.items.length > 0);
-
-  return groups;
-}
-
-function renderModelDetails() {
-  const t = UI_TEXT[viewUiState.uiLanguage];
-  const axisText = AXIS_TEXT_BY_LANG[viewUiState.uiLanguage];
-
-  if (!viewUiState.selectedMesh) {
-    if (filterSelectionState.selectedCellKeys.size === 1) {
-      const [activeCellKey] = [...filterSelectionState.selectedCellKeys];
-      const activeCellModels = getVisibleModelsByCellKey(activeCellKey);
-      if (activeCellModels.length > 0) {
-        const typicalModel = chooseTypicalModel(activeCellModels);
-        const orderedModels = typicalModel
-          ? [
-              typicalModel,
-              ...activeCellModels
-                .filter((model) => model.name !== typicalModel.name)
-                .sort((a, b) => a.name.localeCompare(b.name))
-            ]
-          : [...activeCellModels].sort((a, b) => a.name.localeCompare(b.name));
-
-        renderCellFocusContent(modelContent, {
-          title: t.cellFocusTitle,
-          summaryLine: `${t.detailCell}: ${getCellShortLabel(activeCellKey)}`,
-          guideTitle: t.cellFocusGuideTitle,
-          guideRows: [
-            { label: t.detailCell, value: getCellShortLabel(activeCellKey) },
-            { label: t.cellFocusCountLabel, value: `${activeCellModels.length} ${t.cellCountUnit}` },
-            { label: t.cellFocusTypicalLabel, value: typicalModel ? getModelLabel(typicalModel) : t.detailNone }
-          ],
-          pathTitle: t.cellFocusPathTitle,
-          pathModels: orderedModels.map((model) => ({
-            name: model.name,
-            label: model.name,
-            title: getModelLabel(model)
-          })),
-          hintText: t.cellFocusHint,
-          detailNoneText: t.detailNone
-        });
-        updateDetailBulkActionButtons();
-        return;
-      }
-    }
-    modelContent.textContent = t.modelPanelEmpty;
-    updateDetailBulkActionButtons();
-    return;
-  }
-
-  const model = viewUiState.selectedMesh.userData.model;
-  const xKey = getXBucketValue(model.x);
-  const spaceCell = getCellShortLabel(viewUiState.selectedMesh.userData.cellKey);
-  const displayName = getModelLabel(model);
-  const categoryText = t.categoryLabels[model.category] ?? model.category;
-  const neighborText = viewUiState.neighborMeshes.map((m) => getModelLabel(m.userData.model)).join(" / ") || t.detailNone;
-  const xAxisText = toAxisSingleLine(axisText.x[xKey]);
-  const yAxisText = toAxisSingleLine(axisText.y[String(model.y)]);
-  const zAxisText = toAxisSingleLine(axisText.z[String(model.z)]);
-  const descriptionText = viewUiState.uiLanguage === "en" ? (model.descriptionEn ?? model.description) : model.description;
-  const tags = viewUiState.uiLanguage === "en" ? (model.tagsEn ?? model.tags) : model.tags;
-  const evaluation = model.evaluation || null;
-  const referencePayload = buildModelReferencePayload(model, t);
-  const evidencePackKey = evaluation?.evidencePack || "-";
-  const evidenceSources = window.MODEL_EVIDENCE_PACKS?.[evidencePackKey] || "-";
-  const stageA = evaluation?.stageA || "";
-  const stageAText = stageA === "纳入"
-    ? t.stageAAdmitted
-    : stageA === "观察池"
-      ? t.stageAObserving
-      : stageA === "不纳入"
-        ? t.stageARejected
-        : stageA || "-";
-  const stageAClass = stageA === "纳入"
-    ? "status-admitted"
-    : stageA === "观察池"
-      ? "status-observing"
-      : stageA === "不纳入"
-        ? "status-rejected"
-        : "";
-
-  const rawOverviewRows = [
-    { label: t.detailCategory, value: categoryText },
-    { label: t.detailCell, value: spaceCell },
-    { label: t.detailNeighbor, value: neighborText },
-    { label: t.detailX, value: xAxisText },
-    { label: t.detailY, value: yAxisText },
-    { label: t.detailZ, value: zAxisText }
-  ];
-  if (viewUiState.detailTechnicalViewEnabled) {
-    rawOverviewRows.push({
-      label: t.detailCoord,
-      value: `(${model.x}, ${model.y}, ${model.z})`
-    });
-  }
-  const overviewRows = rawOverviewRows.filter((row) => {
-    const v = String(row.value ?? "").trim();
-    return v && v !== "-" && v !== t.detailNone;
-  });
-
-  const judgementRows = [];
-  const appendJudgementRow = (label, value, allowDash = false) => {
-    const text = String(value ?? "").trim();
-    if (!allowDash && (!text || text === "-")) return;
-    judgementRows.push({ label, value: text || "-" });
-  };
-  appendJudgementRow(t.judgementAxisX, `${xAxisText} · ${t.axisRationaleX[xKey]}`, true);
-  appendJudgementRow(t.judgementAxisY, `${yAxisText} · ${t.axisRationaleY[String(model.y)]}`, true);
-  appendJudgementRow(t.judgementAxisZ, `${zAxisText} · ${t.axisRationaleZ[String(model.z)]}`, true);
-  appendJudgementRow(t.judgementGates, evaluation?.gates || "-");
-  appendJudgementRow(t.judgementReason, evaluation?.reason || "-");
-
-  if (viewUiState.detailTechnicalViewEnabled) {
-    appendJudgementRow(t.judgementEvidencePack, evidencePackKey);
-    appendJudgementRow(t.judgementEvidenceSources, evidenceSources);
-    appendJudgementRow(t.judgementStandardVersion, evaluation?.standardVersion || "-");
-    appendJudgementRow(t.judgementEvaluatedAt, evaluation?.evaluatedAt || "-");
-  }
-
-  const summaryLine = descriptionText && String(descriptionText).trim() ? descriptionText.trim() : null;
-  const relatedGroups = buildRelatedModelGroups(model, viewUiState.selectedMesh.userData.cellKey, t);
-
-  renderModelDetailsContent(modelContent, {
-    displayName,
-    summaryLine,
-    overviewTitle: t.detailOverviewTitle,
-    overviewRows,
-    descriptionTitle: t.detailDefinitionTitle,
-    descriptionText,
-    tagsTitle: t.detailTagsTitle,
-    tags,
-    detailNoneText: t.detailNone,
-    sectionEmptyText: t.referencesNone,
-    judgementTitle: t.judgementCardTitle,
-    judgementStatus: `${t.judgementStatus}: ${stageAText}`,
-    judgementStatusClass: stageAClass,
-    judgementRows,
-    referenceTitle: referencePayload.title,
-    referenceSections: referencePayload.sections,
-    referenceLinks: referencePayload.links,
-    relatedTitle: t.detailRelatedTitle,
-    relatedGroups,
-    relatedHint: t.relatedJumpHint
-  });
-  updateDetailBulkActionButtons();
 }
 
 function fitCameraToCognitiveSpace() {

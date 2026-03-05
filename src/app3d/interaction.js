@@ -27,6 +27,8 @@ export function bindAppInteractionEvents({
     modelMultiSelectVisibleBtn,
     modelMultiSelectAllBtn,
     modelMultiClearBtn,
+    modelMultiExpandGroupsBtn,
+    modelMultiCollapseGroupsBtn,
     cellMultiSearchInput,
     cellMultiSelectVisibleBtn,
     cellMultiSelectAllBtn,
@@ -58,6 +60,8 @@ export function bindAppInteractionEvents({
     onModelSelectVisible,
     onModelSelectAll,
     onModelClear,
+    onModelExpandGroups,
+    onModelCollapseGroups,
     onCellSearchInput,
     onCellSelectVisible,
     onCellSelectAll,
@@ -94,6 +98,8 @@ export function bindAppInteractionEvents({
   bindClick(modelMultiSelectVisibleBtn, onModelSelectVisible);
   bindClick(modelMultiSelectAllBtn, onModelSelectAll);
   bindClick(modelMultiClearBtn, onModelClear);
+  bindClick(modelMultiExpandGroupsBtn, onModelExpandGroups);
+  bindClick(modelMultiCollapseGroupsBtn, onModelCollapseGroups);
 
   bindInput(cellMultiSearchInput, onCellSearchInput);
   bindClick(cellMultiSelectVisibleBtn, onCellSelectVisible);

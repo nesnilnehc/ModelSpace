@@ -410,10 +410,8 @@
       max-height: min(28vh, 235px);
       overflow-y: auto;
       padding: 8px;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: flex-start;
-      align-content: flex-start;
+      display: grid;
+      align-content: start;
       gap: 8px;
       border: 1px solid rgba(122, 157, 236, 0.22);
       border-radius: 9px;
@@ -424,6 +422,56 @@
       font-size: 0.78rem;
       color: #8fa2c8;
       padding: 6px 4px;
+    }
+
+    .model-group {
+      border: 1px solid rgba(122, 157, 236, 0.24);
+      border-radius: 10px;
+      background: rgba(8, 14, 28, 0.6);
+      overflow: hidden;
+    }
+
+    .model-group-toggle {
+      width: 100%;
+      border: 0;
+      border-bottom: 1px solid rgba(122, 157, 236, 0.16);
+      background: rgba(13, 23, 43, 0.74);
+      color: #dbe8ff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 10px;
+      font-size: 0.76rem;
+      line-height: 1.2;
+      text-align: left;
+    }
+
+    .model-group-toggle:hover {
+      background: rgba(24, 42, 76, 0.9);
+    }
+
+    .model-group-title {
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .model-group-summary {
+      color: #9fb3da;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .model-group-content {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px;
+    }
+
+    .model-group.collapsed .model-group-content {
+      display: none;
     }
 
     .filter-tag {
@@ -1067,6 +1115,8 @@
                 <button id="modelMultiSelectVisibleBtn" type="button">选择当前检索结果</button>
                 <button id="modelMultiSelectAllBtn" type="button">全选</button>
                 <button id="modelMultiClearBtn" type="button">清空</button>
+                <button id="modelMultiExpandGroupsBtn" type="button">展开全部分组</button>
+                <button id="modelMultiCollapseGroupsBtn" type="button">收起全部分组</button>
               </div>
             </div>
           </div>
@@ -1092,7 +1142,7 @@
           <p id="visualSwitchTitle" class="preset-title">可视化</p>
           <div class="toggle-list">
             <label class="toggle-item">
-              <input id="linkToggle" type="checkbox" checked />
+              <input id="linkToggle" type="checkbox" />
               <span id="linkToggleText">显示同类模型连线</span>
             </label>
             <label class="toggle-item">

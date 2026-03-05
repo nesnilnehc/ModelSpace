@@ -3,6 +3,7 @@ export function createFilterSelectionState(modelData) {
     keyword: "",
     cellKeyword: "",
     selectedModelNames: new Set(modelData.map((model) => model.name)),
+    collapsedModelCategories: new Map(),
     selectedCellKeys: new Set(),
     allCellKeys: [],
     cellEntries: [],

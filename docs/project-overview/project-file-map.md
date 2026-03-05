@@ -17,16 +17,17 @@
 | 文件 | 作用 |
 | --- | --- |
 | `data/model-library.js` | 模型原始数据源（`MODEL_LIBRARY_ROWS`），并构建证据包、参考资源、阶段A准入结果与汇总。 |
-| `src/app.js` | 应用主逻辑：Three.js 场景构建、节点与网格绘制、筛选、视角控制、详情面板与事件绑定。 |
+| `src/app.js` | 应用编排层：Three.js 场景初始化、状态流串联、过滤与渲染主流程。 |
 | `src/layout.js` | 布局与标签规则：按分类分配坐标槽位，生成模型渲染输入（x/y/z、标签、评估信息）。 |
 
 ## 自动化与脚本
 
 | 文件 | 作用 |
 | --- | --- |
-| `.github/workflows/model-data-validation.yml` | CI 工作流：在 PR/push(main) 时运行模型数据校验与 smoke E2E。 |
+| `.github/workflows/model-data-validation.yml` | CI 工作流：在 PR/push(main) 时运行模型数据校验与 E2E 回归。 |
 | `scripts/validate-model-data.mjs` | 本地/CI 共用校验脚本：检查 `data/model-library.js` 中类别合法性、重名、坐标 override 范围和配对完整性。 |
-| `scripts/smoke-e2e.mjs` | 最小端到端冒烟脚本（本地静态服务 + Playwright）：校验页面加载、语言切换、模型筛选与导出 hook。 |
+| `scripts/smoke-e2e.mjs` | 端到端回归脚本（本地静态服务 + Playwright）：覆盖语言、筛选、单元聚焦、相关模型跳转、URL 恢复、嵌入与导出。 |
+| `scripts/perf-budget.mjs` | 性能预算基线脚本（100+ 节点）：首屏耗时、平均 FPS、导出耗时。 |
 
 ## 源码模块（`src/app3d`）
 
@@ -39,6 +40,8 @@
 | `src/app3d/ui.js` | 详情面板与校验面板渲染；Accordion 交互与“展开/收起全部”控制。 |
 | `src/app3d/interaction.js` | 交互事件绑定模块：集中绑定筛选、视图、语言、窗口等监听器。 |
 | `src/app3d/export.js` | 导出能力模块：导出裁剪范围计算、轴标签缩放、PNG data URL 生成与下载。 |
+| `src/app3d/url-state.js` | URL 状态模块：解析 query、应用状态、同步状态回 URL。 |
+| `src/app3d/details.js` | 详情渲染编排模块：单元聚焦、相关模型分组、详情 payload 组装。 |
 
 ## 第三方依赖（Vendor）
 
@@ -54,10 +57,14 @@
 | `docs/project-overview/project-file-map.md` | 当前文档：项目逐文件职责清单。 |
 | `docs/requirements-planning/model-classification-standard.md` | 模型准入与三维分类的规范标准（v1.1）。 |
 | `docs/requirements-planning/20260304-model-admission-classification.md` | 2026-03-04 批次模型准入与三维分类结果总表。 |
-| `docs/architecture/20260304-3d-visibility-redesign.md` | 3D 可见性改版方案（概览/聚焦等交互设计）。 |
-| `docs/architecture/20260304-model-details-ia-redesign.md` | 详情面板信息架构改版方案（分层折叠结构）。 |
+| `docs/designs/2026-03-05-iteration-roadmap.md` | 后续迭代路线设计草案（A/B/C 路线、阶段目标、验收标准）。 |
+| `docs/architecture/20260304-3d-visibility-redesign.md` | 3D 可见性改版设计文档（Proposed）。 |
+| `docs/architecture/20260304-model-details-ia-redesign.md` | 详情面板信息架构改版设计文档（Proposed）。 |
+| `docs/architecture/20260305-design-principles-optimization.md` | 设计原则驱动的可视化优化与后续建议。 |
 | `docs/architecture/20260305-m1-module-boundaries-event-flow.md` | M1 工程基线文档：模块边界划分与事件流。 |
 | `docs/architecture/20260305-m2-m3-delivery.md` | M2/M3 交付说明：学习路径、相关模型、URL 状态、嵌入入口与导出命名。 |
+| `docs/architecture/20260305-m4-quality-baseline.md` | M4 质量基线交付说明：模块解耦、E2E 扩展、性能预算、默认 UI 优化。 |
+| `docs/architecture/promo-export-flow.md` | README 推广图导出与更新流程。 |
 
 ## 已清理的临时截图（2026-03-04）
 

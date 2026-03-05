@@ -32,3 +32,6 @@ jobs:
 
       - name: Smoke E2E
         run: npm run smoke:e2e
+
+      - name: Performance Budget
+        run: npm run perf:budget
