@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "validate": "node scripts/validate-model-data.mjs",
-    "export-promo": "node scripts/export-promo-image.mjs"
+    "export-promo": "node scripts/export-promo-image.mjs",
+    "smoke:e2e": "node scripts/smoke-e2e.mjs"
   },
   "devDependencies": {
     "playwright": "^1.49.0"

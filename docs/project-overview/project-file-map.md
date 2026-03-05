@@ -9,6 +9,7 @@
 | `.gitignore` | 忽略 macOS 垃圾文件与本地临时截图（`.tmp-*.png`）。 |
 | `README.md` | 项目概览、运行方式、维护命令与结构索引。 |
 | `index.html` | 入口页；保留 query/hash 并重定向到 `cognitive-model-3d.html`。 |
+| `embed.html` | 嵌入入口页；强制 `simple=1&embed=1` 并保留原 query/hash。 |
 | `cognitive-model-3d.html` | 3D 界面的 HTML/CSS 容器与控件定义；通过 importmap 加载 Three.js 与主模块。 |
 
 ## 数据与源码
@@ -23,8 +24,9 @@
 
 | 文件 | 作用 |
 | --- | --- |
-| `.github/workflows/model-data-validation.yml` | CI 工作流：在 PR/push(main) 时运行模型数据校验。 |
+| `.github/workflows/model-data-validation.yml` | CI 工作流：在 PR/push(main) 时运行模型数据校验与 smoke E2E。 |
 | `scripts/validate-model-data.mjs` | 本地/CI 共用校验脚本：检查 `data/model-library.js` 中类别合法性、重名、坐标 override 范围和配对完整性。 |
+| `scripts/smoke-e2e.mjs` | 最小端到端冒烟脚本（本地静态服务 + Playwright）：校验页面加载、语言切换、模型筛选与导出 hook。 |
 
 ## 源码模块（`src/app3d`）
 
@@ -32,8 +34,11 @@
 | --- | --- |
 | `src/app3d/i18n.js` | 中英文文案与坐标轴文本常量。 |
 | `src/app3d/filters.js` | 检索文本拼接、单行轴标签、名称缩写、空间单元键排序工具。 |
+| `src/app3d/state.js` | 筛选与选择状态初始化模块：关键词、模型/空间多选集合及其初始化状态。 |
 | `src/app3d/scene.js` | Three.js 场景通用工具：单元偏移、网格带计算、线段构建、组清理、文字精灵。 |
 | `src/app3d/ui.js` | 详情面板与校验面板渲染；Accordion 交互与“展开/收起全部”控制。 |
+| `src/app3d/interaction.js` | 交互事件绑定模块：集中绑定筛选、视图、语言、窗口等监听器。 |
+| `src/app3d/export.js` | 导出能力模块：导出裁剪范围计算、轴标签缩放、PNG data URL 生成与下载。 |
 
 ## 第三方依赖（Vendor）
 
@@ -51,6 +56,8 @@
 | `docs/requirements-planning/20260304-model-admission-classification.md` | 2026-03-04 批次模型准入与三维分类结果总表。 |
 | `docs/architecture/20260304-3d-visibility-redesign.md` | 3D 可见性改版方案（概览/聚焦等交互设计）。 |
 | `docs/architecture/20260304-model-details-ia-redesign.md` | 详情面板信息架构改版方案（分层折叠结构）。 |
+| `docs/architecture/20260305-m1-module-boundaries-event-flow.md` | M1 工程基线文档：模块边界划分与事件流。 |
+| `docs/architecture/20260305-m2-m3-delivery.md` | M2/M3 交付说明：学习路径、相关模型、URL 状态、嵌入入口与导出命名。 |
 
 ## 已清理的临时截图（2026-03-04）
 

@@ -14,8 +14,11 @@ A frontend-only 3D visualization of cognitive models, mapping them along **X (ti
 - **Interactive scene**: Orbit controls (rotate, zoom, pan) with grid and axis labels
 - **Filtering**: Filter by category, dimension values, and text search
 - **Detail panels**: Expandable model details with evidence bundles, references, and admission metadata
+- **Learning flow**: Cell-focus learning path and related-model grouping in details
+- **Shareable state**: URL query keeps language, view, filters, and panel state for sharing
+- **Embed mode**: Lightweight embedded entry (`embed.html`)
 - **i18n**: Chinese and English support
-- **CI validation**: GitHub Actions workflow validates model data structure on push/PR
+- **CI validation**: GitHub Actions workflow runs model-data validation + smoke E2E on push/PR
 
 ---
 
@@ -55,12 +58,21 @@ No build step needed. The project uses relative paths, so it runs correctly unde
 - **Filters**: Use the control panel to filter by category, dimensions, or text
 - **Details**: Click a model node to open the detail panel
 - **Language**: Switch between 中文 and English in the UI
+- **State sharing**: Copy browser URL to share current view/filter/language state
+
+### Embed mode
+
+- Open `http://localhost:8000/embed.html` for a simplified embedded view
+- You can still pass query parameters (they are merged with `simple=1&embed=1`)
 
 ### Maintenance commands
 
 ```bash
 # Validate model data (same as CI)
 node scripts/validate-model-data.mjs
+
+# Run smoke E2E checks (page load, i18n, filters, export hook)
+npm run smoke:e2e
 
 # Export promo image for README (start server first, e.g. python3 -m http.server 8080)
 npm run export-promo
@@ -92,7 +104,7 @@ See [docs/project-overview/project-file-map.md](docs/project-overview/project-fi
 
 1. Fork the repository
 2. Create a feature branch
-3. Run `node scripts/validate-model-data.mjs` before committing
+3. Run `node scripts/validate-model-data.mjs` and `npm run smoke:e2e` before committing
 4. Open a pull request
 
 ---
