@@ -58,10 +58,10 @@ function toWorldZ(zLevel) {
 1. **原点**：三轴相交点 = **现在 (X=0) × 元认知层 (Y=4) × 元模型 (Z=4)**
 2. **三条直线**：X、Y、Z 各为一条直线，三线交于该原点
 3. **正交布局**：典型右手系等轴测或正视视角，三轴夹角清晰
-4. **每轴刻度在同一直线上**：
-   - X：过去(-1) — 现在(0) — 未来(1)，沿 X 轴
-   - Y：表达(1) — 结构(2) — 战略(3) — 元认知(4)，沿 Y 轴
-   - Z：**工具(1) — 方法(2) — 原则(3) — 元模型(4)**，沿 Z 轴，不得分散
+4. **与时间轴相交的顺序**（从原点沿各轴向外）：
+   - X：过去(-1) — **现在(0)** — 未来(1)
+   - Y：**元认知(4)** — 战略(3) — 结构(2) — 表达(1)（元认知在原点，与现在相交）
+   - Z：**元模型(4)** — 原则(3) — 方法(2) — 工具(1)（元模型在原点，与现在相交）
 
 ### 3.2 示例模型
 
@@ -85,11 +85,11 @@ Create a technical diagram for ModelSpace 3D coordinate system.
 
 CRITICAL - THREE ORTHOGONAL AXES:
 - Three straight lines meeting at ONE point (origin). Origin = 现在(Present) × 元认知层(Meta-Cognition) × 元模型(Meta Model).
-- X axis: horizontal line, left to right. Labels ON the line: 过去(-1) — 现在(0) — 未来(1)
-- Y axis: vertical line, bottom to top. Labels ON the line: 表达层(1) — 结构层(2) — 战略层(3) — 元认知层(4)
-- Z axis: depth line (diagonal into/out of page). Labels ON the same line in order: 工具(1) — 方法(2) — 原则(3) — 元模型(4)
+- X axis: horizontal. Labels: 过去(-1) — 现在(0) — 未来(1)
+- Y axis: 元认知(4) at origin — 战略(3) — 结构(2) — 表达(1). 元认知 intersects with 现在.
+- Z axis: 元模型(4) at origin — 原则(3) — 方法(2) — 工具(1). 元模型 intersects with 现在.
 
-Each axis label must lie ON its axis line. The Z-axis labels 工具/方法/原则/元模型 must form a single straight sequence along the Z line, not scattered.
+At origin: 现在 × 元认知 × 元模型. Order along Y from origin outward: 元认知→战略→结构→表达. Order along Z: 元模型→原则→方法→工具.
 
 Model examples:
 - MECE at (0, 2, 3) - point on the grid
