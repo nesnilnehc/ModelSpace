@@ -100,7 +100,7 @@ To update the promo image: run `npm run export-promo` (with the server running o
 | `cognitive-model-3d.html` | 3D page shell, layout, importmap |
 | `data/model-library.js` | Model data, evidence bundles, references |
 | `src/app.js` | Main app logic (render, filters, details, i18n) |
-| `src/layout.js` | Layout engine (coordinates, labels) |
+| `src/domain/model-data.js` | Model parsing, admission mapping (coordinates, category colors, typical priorities) |
 | `src/app3d/*.js` | Reusable modules (i18n, filters, scene, interaction, export, URL state, detail orchestration) |
 | `scripts/validate-model-data.mjs` | Data validation script |
 | `docs/` | Classification standards, architecture, design docs |

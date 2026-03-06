@@ -18,7 +18,7 @@
 | --- | --- |
 | `data/model-library.js` | 模型原始数据源（`MODEL_LIBRARY_ROWS`），并构建证据包、参考资源、阶段A准入结果与汇总。 |
 | `src/app.js` | 应用编排层：Three.js 场景初始化、状态流串联、过滤与渲染主流程。 |
-| `src/layout.js` | 布局与标签规则：按分类分配坐标槽位，生成模型渲染输入（x/y/z、标签、评估信息）。 |
+| `src/domain/model-data.js` | 模型解析、准入映射：从 rows 构建三维坐标化模型数据，提供 category 配色与典型模型优先级；抽离自 layout.js。 |
 
 ## 自动化与脚本
 
@@ -44,6 +44,7 @@
 | `src/app3d/export.js` | 导出能力模块：导出裁剪范围计算、轴标签缩放、PNG data URL 生成与下载。 |
 | `src/app3d/url-state.js` | URL 状态模块：解析 query、应用状态、同步状态回 URL。 |
 | `src/app3d/details.js` | 详情渲染编排模块：单元聚焦、相关模型分组、详情 payload 组装。 |
+| `src/app3d/panels.js` | 面板层：DOM 解析（resolvePanelElements）、工具栏/详情可见性控制。 |
 
 ## 第三方依赖（Vendor）
 
@@ -64,6 +65,7 @@
 | `docs/requirements-planning/20260304-model-admission-classification.md` | 2026-03-04 批次模型准入与三维分类结果总表。 |
 | `docs/designs/2026-03-05-iteration-roadmap.md` | 后续迭代路线设计草案（A/B/C 路线、阶段目标、验收标准）。 |
 | `docs/designs/2026-03-06-phase3-architecture-evolution.md` | Phase 3 分发深化 & 架构演进规划（可选方向与优先级）。 |
+| `docs/architecture/README.md` | Architecture 文档索引；M1–M5 里程碑交付说明与追溯。 |
 | `docs/architecture/20260304-3d-visibility-redesign.md` | 3D 可见性改版设计文档（Proposed）。 |
 | `docs/architecture/20260304-model-details-ia-redesign.md` | 详情面板信息架构改版设计文档（Proposed）。 |
 | `docs/architecture/20260305-design-principles-optimization.md` | 设计原则驱动的可视化优化与后续建议。 |
@@ -71,7 +73,14 @@
 | `docs/architecture/20260305-m2-m3-delivery.md` | M2/M3 交付说明：学习路径、相关模型、URL 状态、嵌入入口与导出命名。 |
 | `docs/architecture/20260305-m4-quality-baseline.md` | M4 质量基线交付说明：模块解耦、E2E 扩展、性能预算、默认 UI 优化。 |
 | `docs/architecture/20260306-m5-week2-implementation-plan.md` | M5 Week 2 变更可追踪：实施规划（changelog 模板、维护规则、可选脚本）。 |
+| `docs/architecture/20260306-domain-model-data-extraction.md` | domain/model-data 抽离：架构演进首项，模型解析与准入映射迁入 domain 模块。 |
+| `docs/architecture/20260306-core-state-completion.md` | core/state 补全：视角/相机状态逻辑迁入 state.js。 |
+| `docs/architecture/20260306-core-scene-lifecycle.md` | core/scene 生命周期：场景、渲染器、渲染循环集中管理。 |
+| `docs/architecture/20260306-ui-panels-unification.md` | ui/panels 面板层统一：DOM 解析与可见性控制迁入 panels.js。 |
+| `docs/guides/share-url-best-practices.md` | 分享链接最佳实践：URL 参数说明、短格式、嵌入建议。 |
 | `docs/architecture/promo-export-flow.md` | README 推广图导出与更新流程。 |
+| `docs/calibration/2026-03-06-cognitive-loop.md` | 项目认知循环报告；治理周期诊断与推荐任务。 |
+| `docs/calibration/2026-03-06-repair-loop-report.md` | 修复循环报告；自动化测试与缺陷修复记录。 |
 
 ## 已清理的临时截图（2026-03-04）
 

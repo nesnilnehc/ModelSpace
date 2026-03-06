@@ -63,11 +63,24 @@
 
 ## 待办（Todo）
 
+### 下一冲刺方向（已决策：架构演进优先）
+
+| 优先级 | 方向 | 范围 | rationale |
+|--------|------|------|------------|
+| **1 todo** | 架构演进 | domain/model-data → core/state → core/scene → ui/panels | [Roadmap](../designs/2026-03-05-iteration-roadmap.md)：先治理工程结构再叠加功能；[Phase3 规划](../designs/2026-03-06-phase3-architecture-evolution.md) 推荐 domain 先行、与 M5 数据治理对齐 |
+| 2 optional | Phase 3 分发能力深化 | 分享 URL 优化、局部截图、主题海报 | 架构稳定后再推进 |
+| 3 optional | 3D / 详情改版 | 可见性、信息架构优化 | Proposed，择机落地 |
+
+首项建议：`domain/model-data` 抽离（与 M5 数据治理强相关，抽离后便于测试与扩展）。
+
+---
+
 ### 文档同步（持续）
 
 | 任务 | 优先级 | 来源 |
 |------|--------|------|
-| 里程碑完成后更新 `docs/architecture` 与 `project-file-map` | high | [Roadmap 风险缓解](../designs/2026-03-05-iteration-roadmap.md#风险与缓解) |
+| [x] 2026-03-06：M5 完成后更新 `docs/architecture` 与 `project-file-map` | 已完成 | [Roadmap 风险缓解](../designs/2026-03-05-iteration-roadmap.md#风险与缓解) |
+| 下一里程碑完成后更新 `docs/architecture` 与 `project-file-map` | high | 同上（持续） |
 
 ---
 
@@ -75,19 +88,21 @@
 
 ### Phase 3：分发能力深化（方案 C）
 
-- 分享能力增强（带筛选/视角参数的 URL 优化） — 参见 [Phase3 规划](../designs/2026-03-06-phase3-architecture-evolution.md)
+- [x] 分享能力增强（短格式 URL、复制分享链接、分享最佳实践文档） — 已实现
 - 局部截图、主题海报模板
 
-### 架构演进（参考 roadmap 目标架构）
+### 架构演进（已提升为 todo）
 
-- `core/state`、`core/scene`、`core/interaction` 进一步拆分
-- `domain/model-data`、`ui/panels` 独立域
+- [x] **domain/model-data**（medium）— 模型解析、准入映射、校验聚合，已抽离至 `src/domain/model-data.js`
+- [x] **core/state** 补全（small）— 剩余状态逻辑已迁入（createCameraViewDirections、baseCameraCenter 初始化）
+- [x] **core/scene**（medium）— Three.js 生命周期已集中管理（createSceneContext、createRenderLoop）
+- [x] **ui/panels**（medium）— 面板层已统一（resolvePanelElements、setToolbarHidden/setInfoHidden 迁入 panels.js）
 - 详见 [Phase3 & 架构演进规划](../designs/2026-03-06-phase3-architecture-evolution.md)
 
-### 3D / 详情改版（Proposed）
+### 3D / 详情改版（部分完成）
 
-- [docs/architecture/20260304-3d-visibility-redesign.md](../architecture/20260304-3d-visibility-redesign.md)
-- [docs/architecture/20260304-model-details-ia-redesign.md](../architecture/20260304-model-details-ia-redesign.md)
+- [docs/architecture/20260304-3d-visibility-redesign.md](../architecture/20260304-3d-visibility-redesign.md) — Proposed（待实施）
+- [docs/architecture/20260304-model-details-ia-redesign.md](../architecture/20260304-model-details-ia-redesign.md) — Phase 1–3 已完成（默认展开、展开/收起全部、section 会话记忆）
 
 ---
 

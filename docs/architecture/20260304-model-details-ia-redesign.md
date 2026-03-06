@@ -1,8 +1,8 @@
 # Model Details IA Redesign (Option B)
 
 **Date:** 2026-03-04  
-**Status:** Proposed  
-**Scope:** Design only (no implementation in this document)
+**Status:** Implemented (2026-03-06)  
+**Scope:** Phase 1 (default expand/collapse states per Option B)
 
 ## Goal
 Rebuild the "Model Details" panel into a low-cognitive-load reading flow that supports two primary intents:
@@ -166,9 +166,9 @@ This aligns with current refactor direction and avoids duplicate formatting logi
 - [ ] Keyboard-only user can open/close sections and access links.
 
 ## Rollout Plan
-1. Phase 1: Ship sectioned layout with default expand/collapse states.
-2. Phase 2: Add optional `Expand All` / `Collapse All` controls.
-3. Phase 3: Add section-state memory (optional, per-session only).
+1. Phase 1: Ship sectioned layout with default expand/collapse states. ✅
+2. Phase 2: Add optional `Expand All` / `Collapse All` controls. ✅ (already present in info-head)
+3. Phase 3: Add section-state memory (optional, per-session only). ✅ (sessionStorage, 2026-03-06)
 
 ## Out of Scope
 - Cross-model comparison workspace.
