@@ -1,10 +1,11 @@
 import * as THREE from "three";
-import { OrbitControls } from "../vendor/three/examples/jsm/controls/OrbitControls.js";
 import { AXIS_TEXT_BY_LANG, UI_TEXT } from "./app3d/i18n.js";
 import {
   clearGroup,
   computeGridBands,
   createCellOffsets,
+  createSceneContext,
+  createRenderLoop,
   createTextSprite,
   makeLine,
   makePolyline
@@ -15,38 +16,46 @@ import {
   sortCellKey,
   toAxisSingleLine
 } from "./app3d/filters.js";
-import { createFilterSelectionState, createViewUiState } from "./app3d/state.js";
+import {
+  createFilterSelectionState,
+  createViewUiState,
+  createCameraViewDirections
+} from "./app3d/state.js";
 import {
   getDetailSectionSummary,
+  persistDetailSections,
   renderCellFocusContent,
   renderModelDetailsContent,
   setAllDetailSectionsExpanded,
   renderValidationPanelContent
 } from "./app3d/ui.js";
+import {
+  resolvePanelElements,
+  setToolbarHidden as setToolbarHiddenPanel,
+  setInfoHidden as setInfoHiddenPanel
+} from "./app3d/panels.js";
 import { bindAppInteractionEvents } from "./app3d/interaction.js";
 import { createExportService } from "./app3d/export.js";
 import { parseUrlStateFromQuery, createUrlStateController } from "./app3d/url-state.js";
 import { createDetailOrchestrator } from "./app3d/details.js";
-const modelData = window.ModelLayout
-  .buildModelData(window.MODEL_LIBRARY_ROWS)
-  .filter((model) => model?.evaluation?.stageA !== "不纳入");
+import {
+  buildModelData,
+  createAdmittedModelData,
+  CATEGORY_COLOR_MAP as categoryColorMap,
+  CATEGORY_ORDER,
+  TYPICAL_MODEL_PRIORITY
+} from "./domain/model-data.js";
 
-const categoryColorMap = {
-  Expression: 0x79d4ff,
-  Structure: 0xffc677,
-  Diagnosis: 0xff8f98,
-  Strategy: 0x84f4b4,
-  Meta: 0xd2a0ff
+window.ModelLayout = {
+  buildModelData(rows) {
+    return buildModelData(rows, window.MODEL_EVALUATION_BY_NAME);
+  }
 };
-const CATEGORY_ORDER = ["Expression", "Structure", "Diagnosis", "Strategy", "Meta"];
 
-const TYPICAL_MODEL_PRIORITY = {
-  Expression: ["SCQA", "PREP", "STAR", "AIDA", "Elevator Pitch"],
-  Structure: ["MECE", "Issue Tree", "5W1H", "Decision Tree"],
-  Diagnosis: ["5 Whys", "Fishbone Diagram", "FMEA", "Red Teaming"],
-  Strategy: ["OKR", "SWOT", "RICE", "OODA Loop", "Porter's Five Forces"],
-  Meta: ["First Principles", "Systems Thinking", "Meta-Cognition", "Double Loop Learning"]
-};
+const modelData = createAdmittedModelData(
+  window.MODEL_LIBRARY_ROWS,
+  window.MODEL_EVALUATION_BY_NAME
+);
 
 const SCALE = { x: 22, y: 12, z: 12 };
 const SEMANTIC_ORIGIN = { x: 0, y: 4, z: 4 };
@@ -67,126 +76,84 @@ const VISUAL_CONFIG = {
   overviewCompactLabelMaxDistance: 140
 };
 
-const modelMultiSearchInput = document.getElementById("modelMultiSearchInput");
-const modelMultiSummary = document.getElementById("modelMultiSummary");
-const modelMultiList = document.getElementById("modelMultiList");
-const modelMultiSelectVisibleBtn = document.getElementById("modelMultiSelectVisibleBtn");
-const modelMultiSelectAllBtn = document.getElementById("modelMultiSelectAllBtn");
-const modelMultiClearBtn = document.getElementById("modelMultiClearBtn");
-const modelMultiExpandGroupsBtn = document.getElementById("modelMultiExpandGroupsBtn");
-const modelMultiCollapseGroupsBtn = document.getElementById("modelMultiCollapseGroupsBtn");
-const cellMultiSearchInput = document.getElementById("cellMultiSearchInput");
-const cellMultiSummary = document.getElementById("cellMultiSummary");
-const cellMultiList = document.getElementById("cellMultiList");
-const cellMultiSelectVisibleBtn = document.getElementById("cellMultiSelectVisibleBtn");
-const cellMultiSelectAllBtn = document.getElementById("cellMultiSelectAllBtn");
-const cellMultiClearBtn = document.getElementById("cellMultiClearBtn");
-const controlsPanel = document.querySelector(".controls");
-const infoPanel = document.querySelector(".info");
-const linkToggle = document.getElementById("linkToggle");
-const pyramidToggle = document.getElementById("pyramidToggle");
-const neighborToggle = document.getElementById("neighborToggle");
-const toolbarToggleBtn = document.getElementById("toolbarToggleBtn");
-const detailToggleBtn = document.getElementById("detailToggleBtn");
-const exportImageBtn = document.getElementById("exportImageBtn");
-const fullscreenToggleBtn = document.getElementById("fullscreenToggleBtn");
-const dockExpandBtn = document.getElementById("dockExpandBtn");
-const viewDock = document.querySelector(".view-dock");
-const overviewModeBtn = document.getElementById("overviewModeBtn");
-const viewResetBtn = document.getElementById("viewResetBtn");
-const viewPromoBtn = document.getElementById("viewPromoBtn");
-const viewXAxisBtn = document.getElementById("viewXAxisBtn");
-const viewYAxisBtn = document.getElementById("viewYAxisBtn");
-const viewZAxisBtn = document.getElementById("viewZAxisBtn");
-const tooltip = document.getElementById("tooltip");
-const modelContent = document.getElementById("modelContent");
-const appTitle = document.getElementById("appTitle");
-const appSubtitle = document.getElementById("appSubtitle");
-const aboutCardSummary = document.getElementById("aboutCardSummary");
-const aboutWhat = document.getElementById("aboutWhat");
-const aboutAxesIntro = document.getElementById("aboutAxesIntro");
-const aboutAxisXShort = document.getElementById("aboutAxisXShort");
-const aboutAxisYShort = document.getElementById("aboutAxisYShort");
-const aboutAxisZShort = document.getElementById("aboutAxisZShort");
-const aboutWho = document.getElementById("aboutWho");
-const modelMultiLabel = document.getElementById("modelMultiLabel");
-const cellFilterLabel = document.getElementById("cellFilterLabel");
-const linkToggleText = document.getElementById("linkToggleText");
-const gridToggleText = document.getElementById("gridToggleText");
-const neighborToggleText = document.getElementById("neighborToggleText");
-const visualSwitchTitle = document.getElementById("visualSwitchTitle");
-const legendText = document.getElementById("legendText");
-const validationPanel = document.getElementById("validationPanel");
-const modelPanelTitle = document.getElementById("modelPanelTitle");
-const detailCoordToggleBtn = document.getElementById("detailCoordToggleBtn");
-const detailExpandAllBtn = document.getElementById("detailExpandAllBtn");
-const detailCollapseAllBtn = document.getElementById("detailCollapseAllBtn");
-const languageFinderText = document.getElementById("languageFinderText");
-const tabModelsBtn = document.getElementById("tabModelsBtn");
-const tabCellsBtn = document.getElementById("tabCellsBtn");
-const tabVisualBtn = document.getElementById("tabVisualBtn");
-const toolbarTabButtons = document.querySelectorAll("[data-toolbar-tab]");
-const toolbarTabPanels = document.querySelectorAll("[data-toolbar-panel]");
-const quickLangButtons = document.querySelectorAll("[data-ui-lang]");
+const panels = resolvePanelElements(document);
+const {
+  modelMultiSearchInput,
+  modelMultiSummary,
+  modelMultiList,
+  modelMultiSelectVisibleBtn,
+  modelMultiSelectAllBtn,
+  modelMultiClearBtn,
+  modelMultiExpandGroupsBtn,
+  modelMultiCollapseGroupsBtn,
+  cellMultiSearchInput,
+  cellMultiSummary,
+  cellMultiList,
+  cellMultiSelectVisibleBtn,
+  cellMultiSelectAllBtn,
+  cellMultiClearBtn,
+  controlsPanel,
+  infoPanel,
+  linkToggle,
+  pyramidToggle,
+  neighborToggle,
+  toolbarToggleBtn,
+  detailToggleBtn,
+  exportImageBtn,
+  fullscreenToggleBtn,
+  dockExpandBtn,
+  viewDock,
+  overviewModeBtn,
+  viewResetBtn,
+  viewPromoBtn,
+  viewXAxisBtn,
+  viewYAxisBtn,
+  viewZAxisBtn,
+  tooltip,
+  modelContent,
+  appTitle,
+  appSubtitle,
+  aboutCardSummary,
+  aboutWhat,
+  aboutAxesIntro,
+  aboutAxisXShort,
+  aboutAxisYShort,
+  aboutAxisZShort,
+  aboutWho,
+  modelMultiLabel,
+  cellFilterLabel,
+  linkToggleText,
+  gridToggleText,
+  neighborToggleText,
+  visualSwitchTitle,
+  legendText,
+  validationPanel,
+  modelPanelTitle,
+  detailCoordToggleBtn,
+  detailExpandAllBtn,
+  detailCollapseAllBtn,
+  languageFinderText,
+  tabModelsBtn,
+  tabCellsBtn,
+  tabVisualBtn,
+  toolbarTabButtons,
+  toolbarTabPanels,
+  quickLangButtons
+} = panels;
 
 const filterSelectionState = createFilterSelectionState(modelData);
-const viewUiState = createViewUiState({ defaultLanguage: "zh" });
+const viewUiState = createViewUiState({ defaultLanguage: "zh", three: THREE });
+const CAMERA_VIEW_DIRECTIONS = createCameraViewDirections(THREE);
 const initialUrlState = parseUrlStateFromQuery(window.location.search);
-const defaultViewDirection = new THREE.Vector3(1.22, 0.96, 1.18).normalize();
-const promoViewDirection = new THREE.Vector3(1.15, 1.02, 1.12).normalize();
-const CAMERA_VIEW_DIRECTIONS = {
-  default: defaultViewDirection.clone(),
-  promo: promoViewDirection.clone(),
-  x: new THREE.Vector3(1, 0.08, 0.04).normalize(),
-  y: new THREE.Vector3(0.06, 1, 0.06).normalize(),
-  z: new THREE.Vector3(0.04, 0.08, 1).normalize()
-};
-viewUiState.baseCameraCenter = new THREE.Vector3(0, 0, 0);
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0a1220);
-scene.fog = new THREE.Fog(0x0a1220, 140, 300);
-
-const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.domElement.style.position = "fixed";
-renderer.domElement.style.inset = "0";
-renderer.domElement.style.zIndex = "0";
-renderer.domElement.style.touchAction = "none";
 const overlayEl = document.getElementById("overlay");
-document.body.insertBefore(renderer.domElement, overlayEl || document.body.firstChild);
-
-const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(98, 90, 98);
-
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.06;
-controls.maxDistance = 320;
-controls.minDistance = 24;
-controls.target.set(0, 18, 18);
-controls.enablePan = true;
-controls.update();
-
-scene.add(new THREE.AmbientLight(0xc8dcff, 0.85));
-
-const keyLight = new THREE.DirectionalLight(0xa8d4ff, 1.1);
-keyLight.position.set(34, 65, 42);
-scene.add(keyLight);
-
-const fillLight = new THREE.PointLight(0x7ee8dc, 0.9, 200, 1.8);
-fillLight.position.set(-38, 24, 54);
-scene.add(fillLight);
-
-const axisGroup = new THREE.Group();
-const nodesGroup = new THREE.Group();
-const linksGroup = new THREE.Group();
-const pyramidGroup = new THREE.Group();
-const neighborLineGroup = new THREE.Group();
-const cellBadgeGroup = new THREE.Group();
-scene.add(axisGroup, nodesGroup, linksGroup, pyramidGroup, neighborLineGroup, cellBadgeGroup);
+const { scene, renderer, camera, controls, groups } = createSceneContext(THREE, {
+  container: document.body,
+  insertBefore: overlayEl || undefined,
+  width: window.innerWidth,
+  height: window.innerHeight
+});
+const { axisGroup, nodesGroup, linksGroup, pyramidGroup, neighborLineGroup, cellBadgeGroup } = groups;
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -295,6 +262,7 @@ bindAppInteractionEvents({
     detailCoordToggleBtn,
     detailExpandAllBtn,
     detailCollapseAllBtn,
+    shareCopyBtn,
     exportImageBtn,
     fullscreenToggleBtn,
     dockExpandBtn,
@@ -405,6 +373,23 @@ bindAppInteractionEvents({
       const count = setAllDetailSectionsExpanded(modelContent, false);
       if (count > 0) updateDetailBulkActionButtons();
     },
+    onShareCopy: async () => {
+      const url = urlStateController.buildShareUrl(true);
+      try {
+        await navigator.clipboard.writeText(url);
+        const rect = shareCopyBtn?.getBoundingClientRect();
+        const x = rect ? rect.left + rect.width / 2 : lastPointerClient.x;
+        const y = rect ? rect.top - 8 : lastPointerClient.y;
+        showTooltip(x, y, getUIText("copyShareSuccessText"));
+        setTimeout(() => hideTooltip(), 1500);
+      } catch {
+        const rect = shareCopyBtn?.getBoundingClientRect();
+        const x = rect ? rect.left + rect.width / 2 : lastPointerClient.x;
+        const y = rect ? rect.top - 8 : lastPointerClient.y;
+        showTooltip(x, y, "Copy failed");
+        setTimeout(() => hideTooltip(), 1500);
+      }
+    },
     onExportImage: () => {
       exportCanvasImage(buildExportFileName());
     },
@@ -435,6 +420,7 @@ bindAppInteractionEvents({
     },
     onFullscreenChange: updateFullscreenButton,
     onDetailSectionsChange: () => {
+      persistDetailSections(modelContent);
       updateDetailBulkActionButtons();
     },
     onModelContentClick: (event) => {
@@ -456,7 +442,13 @@ if (typeof window !== "undefined") {
   window.__focusModelByName = focusModelByName;
 }
 
-animate();
+createRenderLoop({
+  renderer,
+  scene,
+  camera,
+  controls,
+  onFrame: refreshNodeStylesIfCameraMoved
+})();
 
 function getUIText(key) {
   return UI_TEXT[viewUiState.uiLanguage][key];
@@ -1108,6 +1100,7 @@ function applyUILanguage() {
   if (detailCollapseAllBtn) detailCollapseAllBtn.textContent = t.detailCollapseAllText;
   toolbarToggleBtn.textContent = viewUiState.toolbarHidden ? t.showToolbarText : t.hideToolbarText;
   detailToggleBtn.textContent = viewUiState.infoHidden ? t.showDetailsText : t.hideDetailsText;
+  if (shareCopyBtn) shareCopyBtn.textContent = t.shareCopyText;
   if (exportImageBtn) exportImageBtn.textContent = t.exportImageText;
   setActiveToolbarTab(viewUiState.activeToolbarTab);
   updateFullscreenButton();
@@ -1788,17 +1781,11 @@ function hideTooltip() {
 }
 
 function setToolbarHidden(hidden) {
-  viewUiState.toolbarHidden = hidden;
-  document.body.classList.toggle("toolbar-hidden", hidden);
-  controlsPanel?.setAttribute("aria-hidden", hidden ? "true" : "false");
-  toolbarToggleBtn.textContent = hidden ? getUIText("showToolbarText") : getUIText("hideToolbarText");
+  setToolbarHiddenPanel(panels, viewUiState, hidden, getUIText);
 }
 
 function setInfoHidden(hidden) {
-  viewUiState.infoHidden = hidden;
-  document.body.classList.toggle("info-hidden", hidden);
-  infoPanel?.setAttribute("aria-hidden", hidden ? "true" : "false");
-  detailToggleBtn.textContent = hidden ? getUIText("showDetailsText") : getUIText("hideDetailsText");
+  setInfoHiddenPanel(panels, viewUiState, hidden, getUIText);
 }
 
 function updateFullscreenButton() {
@@ -1834,12 +1821,4 @@ function refreshNodeStylesIfCameraMoved() {
   if (movedDistance < 0.03) return;
   lastCameraPosition.copy(camera.position);
   refreshNodeStyles();
-}
-
-function animate() {
-  requestAnimationFrame(animate);
-
-  controls.update();
-  refreshNodeStylesIfCameraMoved();
-  renderer.render(scene, camera);
 }

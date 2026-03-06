@@ -1,4 +1,111 @@
 import * as THREE from "three";
+import { OrbitControls } from "../../vendor/three/examples/jsm/controls/OrbitControls.js";
+
+/**
+ * core/scene — Three.js 生命周期集中管理
+ *
+ * 职责：场景、渲染器、相机、控制器、灯光、分组创建与配置。
+ * Traceability: Phase3 架构演进
+ */
+
+const DEFAULT_SCENE_BG = 0x0a1220;
+const DEFAULT_FOG = { color: 0x0a1220, near: 140, far: 300 };
+
+/**
+ * 创建完整的 Three.js 场景上下文（scene, renderer, camera, controls, groups, lights）
+ * @param {Object} THREE - Three.js 库
+ * @param {Object} options
+ * @param {HTMLElement} options.container - 渲染器插入的父容器（如 document.body）
+ * @param {HTMLElement} [options.insertBefore] - 渲染器插入在此元素之前
+ * @param {number} [options.width] - 初始宽度
+ * @param {number} [options.height] - 初始高度
+ */
+export function createSceneContext(THREE, options = {}) {
+  const container = options.container ?? document.body;
+  const insertBefore = options.insertBefore ?? null;
+  const width = options.width ?? (typeof window !== "undefined" ? window.innerWidth : 800);
+  const height = options.height ?? (typeof window !== "undefined" ? window.innerHeight : 600);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(DEFAULT_SCENE_BG);
+  scene.fog = new THREE.Fog(DEFAULT_FOG.color, DEFAULT_FOG.near, DEFAULT_FOG.far);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true });
+  renderer.setPixelRatio(Math.min(typeof window !== "undefined" ? window.devicePixelRatio : 2, 2));
+  renderer.setSize(width, height);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.domElement.style.position = "fixed";
+  renderer.domElement.style.inset = "0";
+  renderer.domElement.style.zIndex = "0";
+  renderer.domElement.style.touchAction = "none";
+  if (insertBefore) {
+    container.insertBefore(renderer.domElement, insertBefore);
+  } else {
+    container.appendChild(renderer.domElement);
+  }
+
+  const camera = new THREE.PerspectiveCamera(52, width / height, 0.1, 1000);
+  camera.position.set(98, 90, 98);
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.06;
+  controls.maxDistance = 320;
+  controls.minDistance = 24;
+  controls.target.set(0, 18, 18);
+  controls.enablePan = true;
+  controls.update();
+
+  scene.add(new THREE.AmbientLight(0xc8dcff, 0.85));
+  const keyLight = new THREE.DirectionalLight(0xa8d4ff, 1.1);
+  keyLight.position.set(34, 65, 42);
+  scene.add(keyLight);
+  const fillLight = new THREE.PointLight(0x7ee8dc, 0.9, 200, 1.8);
+  fillLight.position.set(-38, 24, 54);
+  scene.add(fillLight);
+
+  const axisGroup = new THREE.Group();
+  const nodesGroup = new THREE.Group();
+  const linksGroup = new THREE.Group();
+  const pyramidGroup = new THREE.Group();
+  const neighborLineGroup = new THREE.Group();
+  const cellBadgeGroup = new THREE.Group();
+  scene.add(axisGroup, nodesGroup, linksGroup, pyramidGroup, neighborLineGroup, cellBadgeGroup);
+
+  return {
+    scene,
+    renderer,
+    camera,
+    controls,
+    groups: {
+      axisGroup,
+      nodesGroup,
+      linksGroup,
+      pyramidGroup,
+      neighborLineGroup,
+      cellBadgeGroup
+    }
+  };
+}
+
+/**
+ * 创建渲染循环
+ * @param {Object} params
+ * @param {THREE.WebGLRenderer} params.renderer
+ * @param {THREE.Scene} params.scene
+ * @param {THREE.Camera} params.camera
+ * @param {Object} [params.controls] - OrbitControls，每帧调用 update()
+ * @param {Function} [params.onFrame] - 每帧回调（如 refreshNodeStylesIfCameraMoved）
+ */
+export function createRenderLoop({ renderer, scene, camera, controls, onFrame }) {
+  function animate() {
+    requestAnimationFrame(animate);
+    if (controls) controls.update();
+    if (onFrame) onFrame();
+    renderer.render(scene, camera);
+  }
+  return animate;
+}
 
 export function createCellOffsets(total) {
   const step = total >= 10 ? 4.2 : total >= 6 ? 3.8 : 3.4;

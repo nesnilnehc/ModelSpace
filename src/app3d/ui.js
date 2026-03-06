@@ -39,6 +39,55 @@ export function renderValidationPanelContent(validationPanel, t, snapshot, getCe
   validationPanel.appendChild(topLine);
 }
 
+const DETAIL_SECTIONS_STORAGE_KEY = "modelspace-detail-sections";
+
+function getDetailSectionStateFromStorage() {
+  try {
+    const raw = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(DETAIL_SECTIONS_STORAGE_KEY) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function persistDetailSectionState(modelContent) {
+  if (!(modelContent instanceof HTMLElement)) return;
+  const triggers = [...modelContent.querySelectorAll(".accordion-trigger")];
+  const state = {};
+  for (const trigger of triggers) {
+    const section = trigger.closest(".accordion-section");
+    if (!section) continue;
+    const key = [...section.classList].find((c) =>
+      ["overview-card", "definition-card", "judgement-card", "resource-card", "related-card", "tag-card"].includes(c)
+    );
+    if (key) state[key] = trigger.getAttribute("aria-expanded") === "true";
+  }
+  try {
+    if (typeof sessionStorage !== "undefined") sessionStorage.setItem(DETAIL_SECTIONS_STORAGE_KEY, JSON.stringify(state));
+  } catch {}
+}
+
+function restoreDetailSectionState(modelContent) {
+  if (!(modelContent instanceof HTMLElement)) return;
+  const stored = getDetailSectionStateFromStorage();
+  if (!stored) return;
+  const triggers = [...modelContent.querySelectorAll(".accordion-trigger")];
+  for (const trigger of triggers) {
+    const section = trigger.closest(".accordion-section");
+    if (!section) continue;
+    const key = [...section.classList].find((c) =>
+      ["overview-card", "definition-card", "judgement-card", "resource-card", "related-card", "tag-card"].includes(c)
+    );
+    if (key && key in stored) setAccordionExpanded(trigger, Boolean(stored[key]));
+  }
+}
+
+export function persistDetailSections(modelContent) {
+  persistDetailSectionState(modelContent);
+}
+
 function isAccordionTrigger(element) {
   return element instanceof HTMLElement && element.classList.contains("accordion-trigger");
 }
@@ -59,6 +108,7 @@ export function setAllDetailSectionsExpanded(modelContent, expanded) {
   if (!(modelContent instanceof HTMLElement)) return 0;
   const triggers = [...modelContent.querySelectorAll(".accordion-trigger")];
   triggers.forEach((trigger) => setAccordionExpanded(trigger, expanded));
+  modelContent.dispatchEvent(new CustomEvent("detail-sections-change"));
   return triggers.length;
 }
 
@@ -193,7 +243,7 @@ export function renderModelDetailsContent(modelContent, payload) {
   });
 
   if (descriptionText && String(descriptionText).trim() && descriptionText.trim() !== (detailNoneText || "-")) {
-    appendAccordionSection(descriptionTitle, { expanded: false, className: "definition-card" }, (panel) => {
+    appendAccordionSection(descriptionTitle, { expanded: true, className: "definition-card" }, (panel) => {
     const definitionText = document.createElement("p");
     definitionText.className = "definition-text";
     definitionText.textContent = descriptionText || fallbackEmpty;
@@ -203,7 +253,7 @@ export function renderModelDetailsContent(modelContent, payload) {
 
   const hasJudgement = judgementStatus || (judgementRows && judgementRows.length > 0);
   if (hasJudgement) {
-    appendAccordionSection(judgementTitle, { expanded: false }, (panel) => {
+    appendAccordionSection(judgementTitle, { expanded: false, className: "judgement-card" }, (panel) => {
     if (judgementStatus) {
       const statusRow = document.createElement("div");
       statusRow.className = "explain-status-row";
@@ -249,7 +299,7 @@ export function renderModelDetailsContent(modelContent, payload) {
   const hasReferenceContent = (referenceSections && referenceSections.some((s) => s.items && s.items.length > 0)) ||
     (referenceLinks && referenceLinks.length > 0);
   if (hasReferenceContent) {
-    appendAccordionSection(referenceTitle, { expanded: false, className: "resource-card" }, (panel) => {
+    appendAccordionSection(referenceTitle, { expanded: true, className: "resource-card" }, (panel) => {
     const sections = referenceSections || [];
     if (!sections.length && (!referenceLinks || !referenceLinks.length)) {
       const empty = document.createElement("div");
@@ -347,7 +397,7 @@ export function renderModelDetailsContent(modelContent, payload) {
 
   const hasTags = Array.isArray(tags) && tags.length > 0;
   if (hasTags) {
-    appendAccordionSection(tagsTitle, { expanded: false, className: "tag-card" }, (panel) => {
+    appendAccordionSection(tagsTitle, { expanded: true, className: "tag-card" }, (panel) => {
     const tagRow = document.createElement("div");
     tagRow.className = "pill-row";
     for (const tag of tags) {
@@ -375,6 +425,8 @@ export function renderModelDetailsContent(modelContent, payload) {
       event.preventDefault();
     });
   });
+
+  restoreDetailSectionState(modelContent);
 }
 
 export function renderCellFocusContent(modelContent, payload) {

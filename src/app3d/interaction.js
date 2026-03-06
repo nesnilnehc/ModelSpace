@@ -40,6 +40,7 @@ export function bindAppInteractionEvents({
     detailCoordToggleBtn,
     detailExpandAllBtn,
     detailCollapseAllBtn,
+    shareCopyBtn,
     exportImageBtn,
     fullscreenToggleBtn,
     dockExpandBtn,
@@ -73,6 +74,7 @@ export function bindAppInteractionEvents({
     onDetailCoordToggle,
     onDetailExpandAll,
     onDetailCollapseAll,
+    onShareCopy,
     onExportImage,
     onFullscreenToggle,
     onDockExpand,
@@ -142,6 +144,7 @@ export function bindAppInteractionEvents({
   bindClick(detailCoordToggleBtn, onDetailCoordToggle);
   bindClick(detailExpandAllBtn, onDetailExpandAll);
   bindClick(detailCollapseAllBtn, onDetailCollapseAll);
+  bindClick(shareCopyBtn, onShareCopy);
   bindClick(exportImageBtn, onExportImage);
   bindClick(fullscreenToggleBtn, onFullscreenToggle);
   bindClick(dockExpandBtn, onDockExpand);

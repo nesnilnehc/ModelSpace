@@ -6,21 +6,25 @@ function parseList(raw, separator) {
     .filter(Boolean);
 }
 
+function getParam(params, fullKey, shortKey) {
+  return params.get(fullKey) ?? params.get(shortKey) ?? "";
+}
+
 export function parseUrlStateFromQuery(search = "") {
   const params = new URLSearchParams(search || "");
   return {
-    lang: params.get("lang") || "",
-    view: params.get("view") || "",
-    models: parseList(params.get("models"), ","),
-    cells: parseList(params.get("cells"), ";"),
+    lang: getParam(params, "lang", "l") || "",
+    view: getParam(params, "view", "v") || "",
+    models: parseList(getParam(params, "models", "m"), ","),
+    cells: parseList(getParam(params, "cells", "c"), ";"),
     keyword: params.get("q") || "",
     cellKeyword: params.get("cq") || "",
-    link: params.get("link"),
-    grid: params.get("grid"),
-    neighbor: params.get("neighbor"),
-    toolbar: params.get("toolbar"),
-    detail: params.get("detail"),
-    tab: params.get("tab") || ""
+    link: params.get("link") ?? params.get("ln"),
+    grid: params.get("grid") ?? params.get("g"),
+    neighbor: params.get("neighbor") ?? params.get("n"),
+    toolbar: params.get("toolbar") ?? params.get("tb"),
+    detail: params.get("detail") ?? params.get("d"),
+    tab: getParam(params, "tab", "t") || ""
   };
 }
 
@@ -144,8 +148,40 @@ export function createUrlStateController(options) {
     windowRef.history.replaceState(null, "", nextUrl);
   }
 
+  function buildShareUrl(useShort = false) {
+    const params = new URLSearchParams();
+    const set = (full, short, value) => {
+      if (value == null || value === "") return;
+      params.set(useShort ? short : full, value);
+    };
+
+    if (viewUiState.uiLanguage !== "zh") set("lang", "l", viewUiState.uiLanguage);
+    if (viewUiState.activeCameraView !== "default") set("view", "v", viewUiState.activeCameraView);
+    if (viewUiState.activeToolbarTab !== "models") set("tab", "t", viewUiState.activeToolbarTab);
+    if (!linkToggle.checked) set("link", "ln", "0");
+    if (!pyramidToggle.checked) set("grid", "g", "0");
+    if (!neighborToggle.checked) set("neighbor", "n", "0");
+    if (viewUiState.toolbarHidden) set("toolbar", "tb", "0");
+    if (viewUiState.infoHidden) set("detail", "d", "0");
+    if (filterSelectionState.keyword) set("q", "q", filterSelectionState.keyword);
+    if (filterSelectionState.cellKeyword) set("cq", "cq", filterSelectionState.cellKeyword);
+    if (filterSelectionState.selectedModelNames.size > 0 && filterSelectionState.selectedModelNames.size < modelData.length) {
+      set("models", "m", [...filterSelectionState.selectedModelNames].sort().join(","));
+    }
+    if (filterSelectionState.allCellKeys.length > 0
+      && filterSelectionState.selectedCellKeys.size > 0
+      && filterSelectionState.selectedCellKeys.size < filterSelectionState.allCellKeys.length) {
+      set("cells", "c", [...filterSelectionState.selectedCellKeys].sort(sortCellKey).join(";"));
+    }
+
+    const query = params.toString();
+    const base = windowRef.location.origin + windowRef.location.pathname;
+    return query ? `${base}?${query}` : base;
+  }
+
   return {
     applyUrlState,
-    syncUrlState
+    syncUrlState,
+    buildShareUrl
   };
 }
