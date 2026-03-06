@@ -75,13 +75,14 @@
 
 ### Phase 3：分发能力深化（方案 C）
 
-- 分享能力增强（带筛选/视角参数的 URL 优化）
+- 分享能力增强（带筛选/视角参数的 URL 优化） — 参见 [Phase3 规划](../designs/2026-03-06-phase3-architecture-evolution.md)
 - 局部截图、主题海报模板
 
 ### 架构演进（参考 roadmap 目标架构）
 
 - `core/state`、`core/scene`、`core/interaction` 进一步拆分
 - `domain/model-data`、`ui/panels` 独立域
+- 详见 [Phase3 & 架构演进规划](../designs/2026-03-06-phase3-architecture-evolution.md)
 
 ### 3D / 详情改版（Proposed）
 

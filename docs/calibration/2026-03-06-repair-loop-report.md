@@ -31,8 +31,8 @@
 
 ### Review (scope=diff)
 
-- **技能**：review-diff（人工执行）
-- **变更范围**：README.md、project-file-map.md、package.json、未跟踪的 M5 Week 2 产出
+- **技能**：review-diff
+- **变更范围**：`docs/project-overview/goals.md`（新建）、`docs/designs/2026-03-06-phase3-architecture-evolution.md`（新建）、`docs/calibration/2026-03-06-cognitive-loop.md`、`docs/process-management/backlog.md`、`docs/project-overview/project-file-map.md`
 
 **Findings：**
 
@@ -42,11 +42,11 @@
 
 **维度简要：**
 
-- **Intent/Impact**：M5 Week 2 交付（changelog 模板、changelog-diff 脚本、CI 文档化）；意图清晰，影响符合预期。
-- **Regression**：无应用逻辑改动；README 与 project-file-map 为文档更新，无回归风险。
-- **Compatibility**：package.json 新增 `changelog:diff` 为可加性变更，无破坏性。
-- **Side effects**：changelog-diff 仅读取 `git diff`，不修改文件；无副作用。
-- **Observability**：文档变更，不涉及可观测性。
+- **Intent/Impact**：goals.md 确立项目目标；phase3 规划推进可选方向；文档链接与 project-file-map 更新；意图清晰。
+- **Regression**：纯文档变更，无应用逻辑改动，无回归风险。
+- **Compatibility**：无 API 或配置变更。
+- **Side effects**：无副作用。
+- **Observability**：N/A（文档）
 
 ### Tests
 

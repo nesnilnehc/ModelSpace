@@ -57,11 +57,13 @@
 | 文件 | 作用 |
 | --- | --- |
 | `docs/project-overview/project-file-map.md` | 当前文档：项目逐文件职责清单。 |
+| `docs/project-overview/goals.md` | 项目目标：核心、战略、数据治理与非目标。 |
 | `docs/process-management/backlog.md` | 从 roadmap 抽取的待办清单；支持 traceability 与 execution-alignment。 |
 | `docs/changelog/model-library-changelog.md` | 模型库变更日志；按模型粒度记录新增/修改/删除。 |
 | `docs/requirements-planning/model-classification-standard.md` | 模型准入与三维分类的规范标准（v1.1）。 |
 | `docs/requirements-planning/20260304-model-admission-classification.md` | 2026-03-04 批次模型准入与三维分类结果总表。 |
 | `docs/designs/2026-03-05-iteration-roadmap.md` | 后续迭代路线设计草案（A/B/C 路线、阶段目标、验收标准）。 |
+| `docs/designs/2026-03-06-phase3-architecture-evolution.md` | Phase 3 分发深化 & 架构演进规划（可选方向与优先级）。 |
 | `docs/architecture/20260304-3d-visibility-redesign.md` | 3D 可见性改版设计文档（Proposed）。 |
 | `docs/architecture/20260304-model-details-ia-redesign.md` | 详情面板信息架构改版设计文档（Proposed）。 |
 | `docs/architecture/20260305-design-principles-optimization.md` | 设计原则驱动的可视化优化与后续建议。 |
