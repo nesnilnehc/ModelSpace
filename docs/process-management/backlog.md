@@ -89,7 +89,8 @@
 ### Phase 3：分发能力深化（方案 C）
 
 - [x] 分享能力增强（短格式 URL、复制分享链接、分享最佳实践文档） — 已实现
-- 局部截图、主题海报模板
+- [x] 局部截图（当前视口模式） — 已实现：视觉图层「导出方式」可选全认知空间 / 当前视口
+- 局部截图（cell 裁剪）、主题海报模板
 
 ### 架构演进（已提升为 todo）
 
@@ -103,6 +104,7 @@
 
 - [docs/architecture/20260304-3d-visibility-redesign.md](../architecture/20260304-3d-visibility-redesign.md) — Proposed（待实施）
 - [docs/architecture/20260304-model-details-ia-redesign.md](../architecture/20260304-model-details-ia-redesign.md) — Phase 1–3 已完成（默认展开、展开/收起全部、section 会话记忆）
+- [docs/architecture/20260306-phase3-3d-optimization-plan.md](../architecture/20260306-phase3-3d-optimization-plan.md) — 详细优化计划（局部截图、3D 可见性、主题海报）
 
 ---
 

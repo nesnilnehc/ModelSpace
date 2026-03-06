@@ -30,6 +30,10 @@
 
 ---
 
+## 规划中
+
+- [20260306-phase3-3d-optimization-plan.md](20260306-phase3-3d-optimization-plan.md) — Phase 3 可选项 & 3D / 详情改版详细优化计划
+
 ## 提案中（Proposed）
 
 - [20260304-3d-visibility-redesign.md](20260304-3d-visibility-redesign.md) — 3D 可见性改版

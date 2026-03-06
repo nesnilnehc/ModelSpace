@@ -94,7 +94,8 @@ export function createExportService({
   toWorldZ,
   visualConfig
 }) {
-  async function getExportDataUrl() {
+  async function getExportDataUrl(options = {}) {
+    const mode = options.mode ?? "full";
     const overlayEl = document.getElementById("overlay");
     const dockEl = document.querySelector(".view-dock");
     const tooltipEl = document.getElementById("tooltip");
@@ -120,16 +121,19 @@ export function createExportService({
     try {
       await waitForTwoFrames();
       const canvas = renderer.domElement;
-      const rect = getCognitiveSpaceBoundsInPixels({
-        renderer,
-        camera,
-        computeGridBands,
-        scale,
-        toWorldY,
-        toWorldZ,
-        tight: true,
-        exportCropMargin: visualConfig.exportCropMargin
-      });
+      const rect =
+        mode === "viewport"
+          ? { x: 0, y: 0, width: canvas.width, height: canvas.height }
+          : getCognitiveSpaceBoundsInPixels({
+              renderer,
+              camera,
+              computeGridBands,
+              scale,
+              toWorldY,
+              toWorldZ,
+              tight: true,
+              exportCropMargin: visualConfig.exportCropMargin
+            });
 
       const cropCanvas = document.createElement("canvas");
       cropCanvas.width = rect.width;
@@ -153,8 +157,12 @@ export function createExportService({
     }
   }
 
-  function exportCanvasImage(fileName) {
-    getExportDataUrl().then((dataUrl) => {
+  /**
+   * @param {string} [fileName]
+   * @param {{ mode?: 'full' | 'viewport' }} [options]
+   */
+  function exportCanvasImage(fileName, options = {}) {
+    getExportDataUrl(options).then((dataUrl) => {
       const anchor = document.createElement("a");
       anchor.href = dataUrl;
       anchor.download = fileName || `modelspace-${new Date().toISOString().slice(0, 10)}.png`;

@@ -97,6 +97,10 @@ const {
   linkToggle,
   pyramidToggle,
   neighborToggle,
+  exportModeSelect,
+  exportModeLabel,
+  exportModeFullOption,
+  exportModeViewportOption,
   toolbarToggleBtn,
   detailToggleBtn,
   exportImageBtn,
@@ -391,7 +395,8 @@ bindAppInteractionEvents({
       }
     },
     onExportImage: () => {
-      exportCanvasImage(buildExportFileName());
+      const mode = exportModeSelect?.value === "viewport" ? "viewport" : "full";
+      exportCanvasImage(buildExportFileName(), { mode });
     },
     onFullscreenToggle: () => {
       toggleFullscreen();
@@ -1102,6 +1107,9 @@ function applyUILanguage() {
   detailToggleBtn.textContent = viewUiState.infoHidden ? t.showDetailsText : t.hideDetailsText;
   if (shareCopyBtn) shareCopyBtn.textContent = t.shareCopyText;
   if (exportImageBtn) exportImageBtn.textContent = t.exportImageText;
+  if (exportModeLabel) exportModeLabel.textContent = t.exportModeLabel;
+  if (exportModeFullOption) exportModeFullOption.textContent = t.exportModeFull;
+  if (exportModeViewportOption) exportModeViewportOption.textContent = t.exportModeViewport;
   setActiveToolbarTab(viewUiState.activeToolbarTab);
   updateFullscreenButton();
   rebuildModelMultiList();

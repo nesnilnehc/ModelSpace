@@ -73,6 +73,7 @@
 | `docs/architecture/20260305-m2-m3-delivery.md` | M2/M3 交付说明：学习路径、相关模型、URL 状态、嵌入入口与导出命名。 |
 | `docs/architecture/20260305-m4-quality-baseline.md` | M4 质量基线交付说明：模块解耦、E2E 扩展、性能预算、默认 UI 优化。 |
 | `docs/architecture/20260306-m5-week2-implementation-plan.md` | M5 Week 2 变更可追踪：实施规划（changelog 模板、维护规则、可选脚本）。 |
+| `docs/architecture/20260306-phase3-3d-optimization-plan.md` | Phase 3 可选项 & 3D / 详情改版：详细优化计划（局部截图、3D 可见性、主题海报）。 |
 | `docs/architecture/20260306-domain-model-data-extraction.md` | domain/model-data 抽离：架构演进首项，模型解析与准入映射迁入 domain 模块。 |
 | `docs/architecture/20260306-core-state-completion.md` | core/state 补全：视角/相机状态逻辑迁入 state.js。 |
 | `docs/architecture/20260306-core-scene-lifecycle.md` | core/scene 生命周期：场景、渲染器、渲染循环集中管理。 |
