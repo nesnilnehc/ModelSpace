@@ -125,13 +125,25 @@
       box-shadow: inset 0 0 0 1px rgba(184, 218, 255, 0.35);
     }
 
+    .view-btn.focus-exit-hint:not(.active) {
+      border-color: rgba(124, 233, 204, 0.62);
+      background: rgba(19, 52, 52, 0.72);
+      color: #d6fff5;
+    }
+
+    .view-btn.focus-exit-hint:not(.active):hover {
+      border-color: rgba(124, 233, 204, 0.88);
+      background: rgba(24, 68, 68, 0.9);
+    }
+
     body.embed-mode .global-language,
     body.embed-mode #toolbarToggleBtn,
     body.embed-mode #detailToggleBtn,
     body.embed-mode #shareCopyBtn,
     body.embed-mode #exportImageBtn,
     body.embed-mode #fullscreenToggleBtn,
-    body.embed-mode .export-mode-field {
+    body.embed-mode .export-mode-field,
+    body.embed-mode #exportPosterBtn {
       display: none;
     }
 
@@ -1147,10 +1159,10 @@
         <section id="toolbarTabVisual" class="toolbar-tab-panel" role="tabpanel" aria-labelledby="tabVisualBtn" data-toolbar-panel="visual">
           <p id="visualSwitchTitle" class="preset-title">可视化</p>
           <div class="field export-mode-field">
-            <label id="exportModeLabel" for="exportModeSelect">导出方式</label>
+            <label id="exportModeLabel" for="exportModeSelect">导出范围</label>
             <select id="exportModeSelect">
-              <option value="full" id="exportModeFull">全认知空间</option>
-              <option value="viewport" id="exportModeViewport">当前视口</option>
+              <option value="full" id="exportModeFull">整张图</option>
+              <option value="viewport" id="exportModeViewport">当前画面</option>
             </select>
           </div>
           <div class="toggle-list">
@@ -1202,7 +1214,7 @@
             <button type="button" class="lang-btn" data-ui-lang="en">English</button>
           </div>
         </div>
-        <button id="overviewModeBtn" type="button" class="view-btn">概览模式</button>
+        <button id="overviewModeBtn" type="button" class="view-btn">返回总览</button>
         <button id="viewResetBtn" type="button" class="view-btn">默认视角</button>
         <button id="viewPromoBtn" type="button" class="view-btn">推广图视角</button>
         <button id="viewXAxisBtn" type="button" class="view-btn">沿 X 轴看</button>
@@ -1214,6 +1226,7 @@
         <button id="detailToggleBtn" type="button" class="view-btn">隐藏详情</button>
         <button id="shareCopyBtn" type="button" class="view-btn">复制分享链接</button>
         <button id="exportImageBtn" type="button" class="view-btn">导出图片</button>
+        <button id="exportPosterBtn" type="button" class="view-btn">导出分享图</button>
         <button id="fullscreenToggleBtn" type="button" class="view-btn">进入全屏</button>
       </div>
     </div>

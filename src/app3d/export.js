@@ -170,5 +170,81 @@ export function createExportService({
     });
   }
 
-  return { getExportDataUrl, exportCanvasImage };
+  const POSTER_CONFIG = {
+    width: 1200,
+    height: 630,
+    padding: 24,
+    titleFont: "24px \"Noto Sans SC\", \"PingFang SC\", sans-serif",
+    subtitleFont: "16px \"Noto Sans SC\", \"PingFang SC\", sans-serif",
+    titleColor: "#e7efff",
+    subtitleColor: "#a6b3d1",
+    bgColor: "#0a1220",
+    borderColor: "rgba(140, 176, 251, 0.4)"
+  };
+
+  /**
+   * Composite 3D export into a share-card poster (1200×630).
+   * @param {{ title?: string, subtitle?: string }} [options]
+   * @returns {Promise<string>} data URL
+   */
+  async function getExportPosterDataUrl(options = {}) {
+    const title = options.title ?? "认知模型三维坐标系";
+    const subtitle = options.subtitle ?? "用三维空间探索思维与决策模型";
+    const imgDataUrl = await getExportDataUrl({ mode: "viewport" });
+    const { width, height, padding, titleFont, subtitleFont, titleColor, subtitleColor, bgColor, borderColor } = POSTER_CONFIG;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, width - 2, height - 2);
+
+    ctx.fillStyle = titleColor;
+    ctx.font = titleFont;
+    ctx.textAlign = "center";
+    ctx.fillText(title, width / 2, padding + 20);
+
+    ctx.fillStyle = subtitleColor;
+    ctx.font = subtitleFont;
+    ctx.fillText(subtitle, width / 2, padding + 48);
+
+    const img = await new Promise((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = reject;
+      el.src = imgDataUrl;
+    });
+
+    const imgAreaY = padding + 56;
+    const imgAreaH = height - imgAreaY - padding;
+    const imgAreaW = width - padding * 2;
+    const scale = Math.min(imgAreaW / img.width, imgAreaH / img.height);
+    const drawW = img.width * scale;
+    const drawH = img.height * scale;
+    const drawX = (width - drawW) / 2;
+    const drawY = imgAreaY + (imgAreaH - drawH) / 2;
+    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+
+    return canvas.toDataURL("image/png");
+  }
+
+  /**
+   * Export poster and trigger download.
+   * @param {{ title?: string, subtitle?: string }} [options]
+   */
+  function exportPosterImage(options = {}) {
+    getExportPosterDataUrl(options).then((dataUrl) => {
+      const anchor = document.createElement("a");
+      anchor.href = dataUrl;
+      anchor.download = `modelspace-share-${new Date().toISOString().slice(0, 10)}.png`;
+      anchor.click();
+    });
+  }
+
+  return { getExportDataUrl, exportCanvasImage, getExportPosterDataUrl, exportPosterImage };
 }

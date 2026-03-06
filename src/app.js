@@ -103,7 +103,9 @@ const {
   exportModeViewportOption,
   toolbarToggleBtn,
   detailToggleBtn,
+  shareCopyBtn,
   exportImageBtn,
+  exportPosterBtn,
   fullscreenToggleBtn,
   dockExpandBtn,
   viewDock,
@@ -168,7 +170,7 @@ const modelMeshByName = new Map();
 let visibleNodeMeshes = [];
 let queuedPointerEvent = null;
 let pointerFrameQueued = false;
-const { getExportDataUrl, exportCanvasImage } = createExportService({
+const { getExportDataUrl, exportCanvasImage, exportPosterImage } = createExportService({
   renderer,
   camera,
   scene,
@@ -268,6 +270,7 @@ bindAppInteractionEvents({
     detailCollapseAllBtn,
     shareCopyBtn,
     exportImageBtn,
+    exportPosterBtn,
     fullscreenToggleBtn,
     dockExpandBtn,
     overviewModeBtn,
@@ -397,6 +400,10 @@ bindAppInteractionEvents({
     onExportImage: () => {
       const mode = exportModeSelect?.value === "viewport" ? "viewport" : "full";
       exportCanvasImage(buildExportFileName(), { mode });
+    },
+    onExportPoster: () => {
+      const t = UI_TEXT[viewUiState.uiLanguage];
+      exportPosterImage({ title: t.appTitle, subtitle: t.appSubtitle });
     },
     onFullscreenToggle: () => {
       toggleFullscreen();
@@ -555,6 +562,7 @@ function updateViewControlsState() {
   const overviewActive = isOverviewMode();
   if (overviewModeBtn) {
     overviewModeBtn.classList.toggle("active", overviewActive);
+    overviewModeBtn.classList.toggle("focus-exit-hint", !overviewActive);
     overviewModeBtn.setAttribute("aria-pressed", overviewActive ? "true" : "false");
   }
 
@@ -1107,6 +1115,7 @@ function applyUILanguage() {
   detailToggleBtn.textContent = viewUiState.infoHidden ? t.showDetailsText : t.hideDetailsText;
   if (shareCopyBtn) shareCopyBtn.textContent = t.shareCopyText;
   if (exportImageBtn) exportImageBtn.textContent = t.exportImageText;
+  if (exportPosterBtn) exportPosterBtn.textContent = t.exportPosterText;
   if (exportModeLabel) exportModeLabel.textContent = t.exportModeLabel;
   if (exportModeFullOption) exportModeFullOption.textContent = t.exportModeFull;
   if (exportModeViewportOption) exportModeViewportOption.textContent = t.exportModeViewport;

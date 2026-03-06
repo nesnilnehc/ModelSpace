@@ -83,6 +83,16 @@ Why:
 - Highest clarity improvement with moderate complexity.
 - Directly addresses all observed issues: density, discoverability, and per-cell plurality.
 
+## Simple UX Contract (must keep)
+
+To keep interaction understandable for non-expert users, the first release must follow:
+
+1. Use only two user-facing states: **Overview** and **Focus**
+2. Default to **Overview** on first load
+3. Enter **Focus** by clicking a cell badge or selecting a cell
+4. Exit **Focus** via one clear action: **Back to Overview**
+5. Avoid exposing technical labels in UI text (e.g. `viewMode`, `LOD`, `frustum`)
+
 ## Proposed Interaction Model
 
 ### Modes
@@ -96,8 +106,7 @@ Why:
 - Show term + annotation by default.
 - Show optional nearest-neighbor links within the cell context.
 
-3. Compare Mode (optional next phase)
-- Two cells side-by-side filters for contrast reading.
+> Compare mode is out of first-release scope to reduce interaction complexity.
 
 ### Entry Points
 - Cell dropdown (explicit control).
@@ -135,7 +144,7 @@ Why:
 - [ ] No runtime errors in console during language switch, search, and cell switching.
 
 ## Rollout Plan
-1. Stabilize Option B core (overview/focus + cell badges + cell filter).
+1. Stabilize Option B core (overview/focus + cell badges + cell filter + back-to-overview action).
 2. Add startup validation panel (distribution diagnostics).
 3. Add optional guided layer-story (Option C-lite) if needed.
 

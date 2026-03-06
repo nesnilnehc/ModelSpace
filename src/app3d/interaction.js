@@ -42,6 +42,7 @@ export function bindAppInteractionEvents({
     detailCollapseAllBtn,
     shareCopyBtn,
     exportImageBtn,
+    exportPosterBtn,
     fullscreenToggleBtn,
     dockExpandBtn,
     overviewModeBtn,
@@ -76,6 +77,7 @@ export function bindAppInteractionEvents({
     onDetailCollapseAll,
     onShareCopy,
     onExportImage,
+    onExportPoster,
     onFullscreenToggle,
     onDockExpand,
     onOverviewMode,
@@ -146,6 +148,7 @@ export function bindAppInteractionEvents({
   bindClick(detailCollapseAllBtn, onDetailCollapseAll);
   bindClick(shareCopyBtn, onShareCopy);
   bindClick(exportImageBtn, onExportImage);
+  bindClick(exportPosterBtn, onExportPoster);
   bindClick(fullscreenToggleBtn, onFullscreenToggle);
   bindClick(dockExpandBtn, onDockExpand);
   bindClick(overviewModeBtn, onOverviewMode);

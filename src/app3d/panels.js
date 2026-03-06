@@ -39,6 +39,7 @@ export function resolvePanelElements(doc) {
     detailToggleBtn: doc.getElementById("detailToggleBtn"),
     shareCopyBtn: doc.getElementById("shareCopyBtn"),
     exportImageBtn: doc.getElementById("exportImageBtn"),
+    exportPosterBtn: doc.getElementById("exportPosterBtn"),
     fullscreenToggleBtn: doc.getElementById("fullscreenToggleBtn"),
     dockExpandBtn: doc.getElementById("dockExpandBtn"),
     viewDock: doc.querySelector(".view-dock"),
