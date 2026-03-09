@@ -13,7 +13,7 @@ window.MODEL_LIBRARY_ROWS = [
 
   ["MECE", "相互独立完全穷尽原则", "Mutually Exclusive Collectively Exhaustive structuring rule.", "Structure", 2, 3],
   ["5W1H", "六问分析法", "What-Why-Who-When-Where-How completeness check.", "Structure"],
-  ["Issue Tree", "问题树", "Hierarchical problem decomposition.", "Structure"],
+  ["Issue Tree", "问题树（逻辑树）", "Hierarchical problem decomposition (also called logic tree).", "Structure"],
   ["Decision Tree", "决策树", "Tree-based probabilistic choice model.", "Structure"],
   ["P.A.R.A.", "项目领域资源归档体系", "Projects-Areas-Resources-Archives knowledge organization method.", "Structure", 2, 2],
   ["9-Grid Thinking", "九宫格思维", "Time×Space matrix for structuring analysis; four lines break cognitive traps (Takagi/TRIZ).", "Structure", 2, 2],
@@ -126,6 +126,19 @@ window.MODEL_REFERENCE_RESOURCES = {
         title: "The Pyramid Principle",
         author: "Barbara Minto",
         url: "https://books.google.com/books?q=The+Pyramid+Principle+Barbara+Minto"
+      }
+    ]
+  },
+  "Issue Tree": {
+    authors: ["Arnaud Chevallier", "McKinsey approach"],
+    wikipedia: [
+      { title: "Issue tree", url: "https://en.wikipedia.org/wiki/Issue_tree" }
+    ],
+    books: [
+      {
+        title: "Strategic Thinking in Complex Problem Solving",
+        author: "Arnaud Chevallier",
+        url: "https://books.google.com/books?q=Strategic+Thinking+Complex+Problem+Solving+Chevallier"
       }
     ]
   },

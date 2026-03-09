@@ -26,6 +26,7 @@ npm run verify:illustrations
 ## Manual Overrides
 
 - `MECE` keeps manual `mece.svg` and is not overwritten by generator.
+- `Issue Tree` keeps manual `issue-tree.svg` (left-to-right MECE tree, Chevallier/Wikipedia semantics).
 
 ## Next Quality Work
 

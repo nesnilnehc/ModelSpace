@@ -25,7 +25,7 @@ const COLORS = {
   muted: "rgba(190,210,230,0.75)"
 };
 
-const MANUAL_SLUGS = new Set(["mece"]);
+const MANUAL_SLUGS = new Set(["mece", "issue-tree"]);
 
 function slugify(value) {
   return String(value).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");

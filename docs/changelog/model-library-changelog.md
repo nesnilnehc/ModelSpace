@@ -20,3 +20,4 @@
 | 日期 | 对象 | 变更类型 | 原因/摘要 |
 |------|------|----------|-----------|
 | 2026-03-06 | (all) | — | 初始版本；changelog 机制建立 |
+| 2026-03-10 | Issue Tree | modified | 融入 Wikipedia 信息：aliasZh 增「逻辑树」、descriptionEn 增 logic tree；新增 MODEL_REFERENCE_RESOURCES（维基、Chevallier） |
