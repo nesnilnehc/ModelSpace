@@ -79,6 +79,6 @@ if (errors.length > 0) {
 }
 
 console.log("Content governance validation passed.");
-console.log(`Checked ${MODEL_LIBRARY_ROWS.length} models for content length.`);
-console.log(`Checked ${Object.keys(MODEL_EVALUATION_BY_NAME).length} model evidence mappings.`);
+console.log(`Checked ${MODEL_LIBRARY_ROWS.length} objects for content length.`);
+console.log(`Checked ${Object.keys(MODEL_EVALUATION_BY_NAME).length} object evidence mappings.`);
 console.log(`Checked ${Object.keys(MODEL_REFERENCE_RESOURCES || {}).length} reference configurations.`);

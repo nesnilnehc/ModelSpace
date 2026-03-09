@@ -1,7 +1,9 @@
 {
-  "name": "modelspace",
+  "name": "cognitive-atlas",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
+  "description": "Cognitive Atlas is a knowledge map for thinking models, with structured objects, learning links, and stable semantics for both people and AI.",
   "scripts": {
     "validate": "node scripts/validate-model-data.mjs",
     "validate:content": "node scripts/validate-model-content.mjs",

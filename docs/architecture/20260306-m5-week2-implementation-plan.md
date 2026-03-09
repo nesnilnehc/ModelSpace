@@ -1,4 +1,4 @@
-# ModelSpace M5 Week 2：变更可追踪 — 实施规划
+# Cognitive Atlas M5 Week 2：变更可追踪 — 实施规划
 
 **Date:** 2026-03-06  
 **Status:** Implemented  

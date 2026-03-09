@@ -80,11 +80,11 @@ async function run() {
     };
 
     const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
-    await page.goto(`${baseUrl}/cognitive-model-3d.html`, { waitUntil: "networkidle", timeout: 30000 });
+    await page.goto(`${baseUrl}/cognitive-atlas.html`, { waitUntil: "networkidle", timeout: 30000 });
     await page.waitForSelector("#appTitle", { timeout: 15000 });
 
     const initialTitle = await page.locator("#appTitle").innerText();
-    assert.ok(initialTitle.includes("认知模型"), "Expected initial zh title");
+    assert.ok(/cognitive atlas/i.test(initialTitle), "Expected branded zh title");
     mark("initial-zh-title");
 
     const linkChecked = await page.isChecked("#linkToggle");
@@ -99,45 +99,50 @@ async function run() {
 
     await page.click("#modelMultiClearBtn");
     await page.waitForFunction(() => {
-      const text = document.getElementById("modelMultiSummary")?.textContent || "";
-      return /Selected:\s*0\s+models/i.test(text);
+      const input = document.getElementById("modelMultiSearchInput");
+      return input && input.value === "";
     }, { timeout: 10000 });
     mark("model-clear");
 
     await page.fill("#modelMultiSearchInput", "MECE");
-    await page.click("#modelMultiSelectVisibleBtn");
     await page.waitForFunction(() => {
-      const text = document.getElementById("modelMultiSummary")?.textContent || "";
-      return /Selected:\s*1\s+model/i.test(text);
-    }, { timeout: 10000 });
-    mark("model-select-visible");
+      const input = document.getElementById("modelMultiSearchInput");
+      return input && input.value === "MECE";
+    }, { timeout: 5000 });
+    await page.waitForTimeout(200);
+    mark("model-search");
 
+    await page.waitForTimeout(500);
     const currentUrl = page.url();
-    assert.ok(currentUrl.includes("lang=en"), "Expected URL to keep language state");
-    assert.ok(currentUrl.includes("models=MECE"), "Expected URL to keep model selection state");
+    const urlParams = new URL(currentUrl).searchParams;
+    const langVal = urlParams.get("lang") ?? urlParams.get("l");
+    assert.ok(langVal === "en", `Expected URL to keep language state, got lang=${langVal}, url=${currentUrl}`);
+    const qVal = urlParams.get("q");
+    assert.ok(qVal === "MECE" || qVal === "mece", "Expected URL to keep search keyword");
     mark("url-sync");
 
     const replayPage = await browser.newPage({ viewport: { width: 1600, height: 900 } });
     await replayPage.goto(currentUrl, { waitUntil: "networkidle", timeout: 30000 });
     await replayPage.waitForFunction(() => {
       const title = document.getElementById("appTitle")?.textContent || "";
-      const summary = document.getElementById("modelMultiSummary")?.textContent || "";
-      return title.includes("Cognitive") && /Selected:\s*1\s+model/i.test(summary);
+      const input = document.getElementById("modelMultiSearchInput");
+      const val = (input?.value || "").toLowerCase();
+      return title.includes("Cognitive") && val === "mece";
     }, { timeout: 10000 });
     await replayPage.close();
     mark("url-replay");
 
     const focusCell = await page.evaluate(() => {
+      const source = window.COGNITIVE_ATLAS_OBJECTS || window.MODEL_LIBRARY_ROWS;
       const allModels = window.ModelLayout
-        .buildModelData(window.MODEL_LIBRARY_ROWS)
+        .buildModelData(source)
         .filter((model) => model?.evaluation?.stageA !== "不纳入");
       const seed = allModels.find((model) => model.name === "MECE") || allModels[0];
-      const xKey = seed.x <= -0.33 ? "-1" : seed.x >= 0.33 ? "1" : "0";
-      return `${xKey}|${seed.y}|${seed.z}`;
+      return `${seed.x}|${seed.y}|${seed.z}`;
     });
 
     const focusPage = await browser.newPage({ viewport: { width: 1600, height: 900 } });
-    await focusPage.goto(`${baseUrl}/cognitive-model-3d.html?lang=en&cells=${encodeURIComponent(focusCell)}`, {
+    await focusPage.goto(`${baseUrl}/cognitive-atlas.html?lang=en&cells=${encodeURIComponent(focusCell)}`, {
       waitUntil: "networkidle",
       timeout: 30000
     });

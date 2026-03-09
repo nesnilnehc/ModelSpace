@@ -1,6 +1,6 @@
 # 推广图更新流程
 
-本文档说明如何更新 README 使用的推广图 `docs/assets/modelspace-promo.png`。
+本文档说明如何更新 README 使用的推广图 `docs/assets/cognitive-atlas-promo.png`。
 
 ## 步骤
 
@@ -10,22 +10,22 @@
    # 或 npx serve
    ```
 
-2. **打开 3D 页面**
-   - 访问 `http://localhost:8080/cognitive-model-3d.html`
+2. **打开 Atlas 页面**
+   - 访问 `http://localhost:8080/cognitive-atlas.html`
 
 3. **选择推广图视角（推荐）**
    - 点击顶栏「推广图视角」按钮，将相机切换到适合 README 的固定角度
 
-4. **可选：筛选模型**
-   - 若需突出部分模型，可在「模型筛选」或「空间筛选」中缩小范围
-   - 默认展示全部模型
+4. **可选：收敛范围**
+   - 若需突出部分对象，可在「检索与聚焦」中先查找对象，再按 Atlas 单元缩小范围
+   - 默认展示全部对象
 
 5. **导出图片**
    - 点击顶栏「导出图片」
-   - 浏览器会下载 `modelspace-YYYY-MM-DD.png`
+   - 浏览器会下载 `cognitive-atlas-YYYY-MM-DD.png`
 
 6. **保存为推广图**
-   - 将下载的 PNG 重命名并覆盖 `docs/assets/modelspace-promo.png`
+   - 将下载的 PNG 重命名并覆盖 `docs/assets/cognitive-atlas-promo.png`
 
 ## 导出特性
 

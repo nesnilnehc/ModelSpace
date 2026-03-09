@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Export promo image for ModelSpace 3D view.
+ * Export promo image for the Cognitive Atlas view.
  *
  * Requires:
  * 1. Local server running (e.g. python3 -m http.server 8080)
@@ -10,7 +10,7 @@
  *   npm run export-promo
  *   # or: node scripts/export-promo-image.mjs
  *
- * Output: docs/assets/modelspace-promo.png
+ * Output: docs/assets/cognitive-atlas-promo.png
  */
 import { chromium } from "playwright";
 import { writeFileSync } from "node:fs";
@@ -20,7 +20,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
-const outputPath = join(root, "docs/assets/modelspace-promo.png");
+const outputPath = join(root, "docs/assets/cognitive-atlas-promo.png");
 const baseUrl = process.env.EXPORT_BASE_URL || "http://localhost:8080";
 
 async function main() {
@@ -35,8 +35,8 @@ async function main() {
   await page.setViewportSize({ width: 2560, height: 1440 });
 
   try {
-    console.log(`Loading ${baseUrl}/cognitive-model-3d.html ...`);
-    await page.goto(`${baseUrl}/cognitive-model-3d.html`, {
+    console.log(`Loading ${baseUrl}/cognitive-atlas.html ...`);
+    await page.goto(`${baseUrl}/cognitive-atlas.html`, {
       waitUntil: "networkidle",
       timeout: 15000,
     });

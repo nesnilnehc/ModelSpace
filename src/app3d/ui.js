@@ -2,6 +2,7 @@ export function renderValidationPanelContent(validationPanel, t, snapshot, getCe
   if (!validationPanel) return;
 
   const toolLayerOk = snapshot.toolLayerCount > 0;
+  const classificationGateOk = snapshot.unclassifiedCount === 0;
   const denseRatioOk = snapshot.denseRatio >= 0.7;
   const densePercent = `${(snapshot.denseRatio * 100).toFixed(0)}%`;
   const topCellsText = snapshot.topCells.length > 0
@@ -19,6 +20,11 @@ export function renderValidationPanelContent(validationPanel, t, snapshot, getCe
   toolLine.className = toolLayerOk ? "validation-ok" : "validation-error";
   toolLine.textContent = `${toolLayerOk ? "✓" : "✗"} ${toolLayerOk ? t.validationToolLayerOk : t.validationToolLayerMissing} (${snapshot.toolLayerCount})`;
   validationPanel.appendChild(toolLine);
+
+  const gateLine = document.createElement("div");
+  gateLine.className = classificationGateOk ? "validation-ok" : "validation-error";
+  gateLine.textContent = `${classificationGateOk ? "✓" : "✗"} ${classificationGateOk ? t.validationClassificationGateOk : t.validationClassificationGateFail} (${snapshot.unclassifiedCount}/${snapshot.admittedCount})`;
+  validationPanel.appendChild(gateLine);
 
   const densityLine = document.createElement("div");
   densityLine.className = denseRatioOk ? "validation-ok" : "validation-warn";
@@ -39,14 +45,18 @@ export function renderValidationPanelContent(validationPanel, t, snapshot, getCe
   validationPanel.appendChild(topLine);
 }
 
-const DETAIL_SECTIONS_STORAGE_KEY = "modelspace-detail-sections";
+const DETAIL_SECTIONS_STORAGE_KEYS = ["cognitive-atlas-detail-sections"];
 
 function getDetailSectionStateFromStorage() {
   try {
-    const raw = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(DETAIL_SECTIONS_STORAGE_KEY) : null;
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : null;
+    if (typeof sessionStorage === "undefined") return null;
+    for (const storageKey of DETAIL_SECTIONS_STORAGE_KEYS) {
+      const raw = sessionStorage.getItem(storageKey);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") return parsed;
+    }
+    return null;
   } catch {
     return null;
   }
@@ -65,7 +75,9 @@ function persistDetailSectionState(modelContent) {
     if (key) state[key] = trigger.getAttribute("aria-expanded") === "true";
   }
   try {
-    if (typeof sessionStorage !== "undefined") sessionStorage.setItem(DETAIL_SECTIONS_STORAGE_KEY, JSON.stringify(state));
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.setItem(DETAIL_SECTIONS_STORAGE_KEYS[0], JSON.stringify(state));
+    }
   } catch {}
 }
 

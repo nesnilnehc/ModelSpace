@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-06
 **Status:** Proposed
-**Goal:** 增强 ModelSpace 的内容传播能力，使用户能快速生成高质量的局部模型图和品牌海报。
+**Goal:** 增强 Cognitive Atlas 的内容传播能力，使用户能快速生成高质量的局部模型图和品牌海报。
 
 ## 1. 局部截图 (Cell Crop)
 
@@ -24,7 +24,7 @@
 ### 核心逻辑
 - **风格**: **深色科技 (Cyber)**
   - 背景：深蓝/黑渐变，叠加网格线或粒子噪点。
-  - 装饰：发光边框，角落由 ModelSpace LOGO、二维码、Slogan 组成。
+  - 装饰：发光边框，角落由 Cognitive Atlas LOGO、二维码、Slogan 组成。
   - 布局：
     - 主图区 (60-70%)：3D 渲染图（复用局部截图逻辑）。
     - 信息区 (30-40%)：模型标题（大号）、定义（中号）、分类标签（胶囊样式）。
@@ -37,7 +37,7 @@
   - 步骤 3: 绘制深色背景与装饰纹理。
   - 步骤 4: 绘制 3D 截图到主图区。
   - 步骤 5: 绘制文字信息 (Title, Definition, QR Code)。
-- **输出**: PNG 图片下载，文件名 `ModelSpace-Poster-{ModelName}.png`。
+- **输出**: PNG 图片下载，文件名 `Cognitive-Atlas-Poster-{ModelName}.png`。
 
 ## 3. 验收标准
 - [ ] 选中 Cell 后导出，图片内容仅包含该 Cell 节点，无多余遮挡。

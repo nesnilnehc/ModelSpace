@@ -1,4 +1,4 @@
-# ModelSpace M1 模块边界与事件流
+# Cognitive Atlas M1 模块边界与事件流
 
 **Date:** 2026-03-05  
 **Status:** Implemented (Phase 1)

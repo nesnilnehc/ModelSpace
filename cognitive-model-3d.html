@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>认知模型三维坐标系</title>
+  <title>Cognitive Atlas</title>
   <link rel="icon" href="data:," />
   <style>
     :root {
@@ -273,7 +273,7 @@
 
     .toolbar-tabs {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
       margin: 12px 0 10px;
     }
@@ -360,6 +360,17 @@
       margin-bottom: 12px;
     }
 
+    .field:last-child {
+      margin-bottom: 0;
+    }
+
+    .field-hint {
+      margin: -2px 0 8px;
+      color: rgba(192, 208, 236, 0.74);
+      font-size: 0.76rem;
+      line-height: 1.45;
+    }
+
     .field label {
       display: block;
       margin-bottom: 6px;
@@ -415,6 +426,33 @@
     .model-picker-search:focus {
       border-color: var(--accent-2);
       box-shadow: 0 0 0 3px rgba(123, 185, 255, 0.2);
+    }
+
+    .model-search-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .model-search-row .model-picker-search {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .search-clear-btn {
+      flex-shrink: 0;
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      border: 1px solid rgba(133, 165, 239, 0.38);
+      border-radius: 8px;
+      background: rgba(11, 20, 39, 0.88);
+      color: #c7d9f7;
+      cursor: pointer;
+    }
+
+    .search-clear-btn:hover {
+      background: rgba(26, 42, 78, 0.95);
+      border-color: rgba(160, 194, 255, 0.72);
     }
 
     .model-multi-summary {
@@ -650,6 +688,70 @@
     .detail-head-btn:disabled {
       opacity: 0.45;
       cursor: default;
+    }
+
+    .scope-status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 6px 12px;
+      border: 1px solid rgba(128, 164, 236, 0.28);
+      border-radius: 999px;
+      background: rgba(12, 21, 40, 0.82);
+      color: #d9e8ff;
+      font-size: 0.78rem;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .dock-advanced,
+    .detail-advanced {
+      border: 1px solid rgba(128, 164, 236, 0.28);
+      border-radius: 12px;
+      background: rgba(10, 18, 36, 0.5);
+      overflow: hidden;
+    }
+
+    .dock-advanced summary,
+    .detail-advanced summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 8px 12px;
+      color: #d7e5ff;
+      font-size: 0.78rem;
+      line-height: 1.2;
+      user-select: none;
+    }
+
+    .dock-advanced summary::-webkit-details-marker,
+    .detail-advanced summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .dock-advanced summary::after,
+    .detail-advanced summary::after {
+      content: "▼";
+      margin-left: 8px;
+      font-size: 0.68rem;
+      opacity: 0.72;
+      transition: transform 0.2s ease;
+    }
+
+    .dock-advanced[open] summary::after,
+    .detail-advanced[open] summary::after {
+      transform: rotate(-180deg);
+    }
+
+    .dock-advanced-actions,
+    .detail-advanced-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0 10px 10px;
+    }
+
+    .detail-advanced {
+      margin-left: auto;
     }
 
     .info-scroll {
@@ -1098,107 +1200,78 @@
   <body>
   <div id="overlay">
     <section class="panel controls">
-      <h1 id="appTitle">认知模型三维坐标系</h1>
-      <p id="appSubtitle" class="subtitle">用三维空间探索思维与决策模型：定位、比较、深入学习。</p>
+      <h1 id="appTitle">Cognitive Atlas</h1>
+      <p id="appSubtitle" class="subtitle">帮助你更快找到、理解并连接有用认知对象的知识地图。</p>
       <div class="about-card">
         <details id="aboutCardDetails" open>
           <summary id="aboutCardSummary">这是什么？</summary>
           <div class="about-card-body">
-            <p id="aboutWhat">本站在三维坐标系中展示一批认知与决策模型（如 MECE、OKR、黄金圈等），按时间导向、控制深度、抽象程度定位，便于比较与延伸阅读。</p>
-            <p><strong id="aboutAxesIntro">三轴含义：</strong></p>
+            <p id="aboutWhat">这里将模型、框架、原则、方法、工具等认知对象组织成一张可检索、可学习、可引用的知识地图。你可以先找问题，再看相关对象，并沿关联继续学习。</p>
+            <p><strong id="aboutAxesIntro">它如何组织内容：</strong></p>
             <ul>
-              <li id="aboutAxisXShort">X 轴：过去 / 现在 / 未来（时间导向）</li>
-              <li id="aboutAxisYShort">Y 轴：表达层 → 结构层 → 战略层 → 元认知层（控制深度）</li>
-              <li id="aboutAxisZShort">Z 轴：工具 → 方法 → 原则 → 元模型（抽象程度）</li>
+              <li id="aboutAxisXShort">用于哪个阶段？感知 → 诊断 → 设计 → 执行 → 适应</li>
+              <li id="aboutAxisYShort">它更像什么？元层 → 概念层 → 结构层 → 程序层 → 工具层</li>
+              <li id="aboutAxisZShort">主要作用在哪？个体 → 团队 → 组织 → 生态 → 社会</li>
             </ul>
-            <p id="aboutWho">适合做知识整理、战略思考或学习方法梳理时参考。</p>
+            <p id="aboutWho">适合快速查找认知对象、规划自我提升路径，也适合作为 AI 的结构化参考。</p>
           </div>
         </details>
       </div>
-      <div class="toolbar-tabs" role="tablist" aria-label="Toolbar sections">
-        <button id="tabModelsBtn" class="toolbar-tab active" type="button" role="tab" aria-selected="true" aria-controls="toolbarTabModels" data-toolbar-tab="models">模型筛选</button>
-        <button id="tabCellsBtn" class="toolbar-tab" type="button" role="tab" aria-selected="false" aria-controls="toolbarTabCells" data-toolbar-tab="cells">空间筛选</button>
-        <button id="tabVisualBtn" class="toolbar-tab" type="button" role="tab" aria-selected="false" aria-controls="toolbarTabVisual" data-toolbar-tab="visual">视觉图层</button>
-      </div>
-
       <div class="panel-scroll">
-        <section id="toolbarTabModels" class="toolbar-tab-panel active" role="tabpanel" aria-labelledby="tabModelsBtn" data-toolbar-panel="models">
-          <div class="field">
-            <label id="modelMultiLabel" for="modelMultiSearchInput">模型检索（多选）</label>
-            <div id="modelPicker" class="model-picker">
-              <input id="modelMultiSearchInput" class="model-picker-search" type="text" placeholder="输入术语检索，例如：MECE / OKR" />
-              <div id="modelMultiSummary" class="model-multi-summary">全部模型</div>
-              <div id="modelMultiList" class="model-multi-list"></div>
-              <div class="model-multi-actions">
-                <button id="modelMultiSelectVisibleBtn" type="button">选择当前检索结果</button>
-                <button id="modelMultiSelectAllBtn" type="button">全选</button>
-                <button id="modelMultiClearBtn" type="button">清空</button>
-                <button id="modelMultiExpandGroupsBtn" type="button">展开全部分组</button>
-                <button id="modelMultiCollapseGroupsBtn" type="button">收起全部分组</button>
-              </div>
+        <div class="field">
+          <label id="modelMultiLabel" for="modelMultiSearchInput">搜索</label>
+          <div class="model-search-row">
+            <input id="modelMultiSearchInput" class="model-picker-search" type="text" placeholder="输入对象名或术语，例如：MECE / OKR" />
+            <button id="modelMultiClearBtn" type="button" class="search-clear-btn">清空</button>
+          </div>
+        </div>
+        <details class="dock-advanced" id="toolbarMore">
+          <summary id="toolbarMoreSummary">更多</summary>
+          <div class="dock-advanced-actions">
+            <div class="field export-mode-field">
+              <label id="exportModeLabel" for="exportModeSelect">导出范围</label>
+              <select id="exportModeSelect">
+                <option value="full" id="exportModeFull">整张图</option>
+                <option value="viewport" id="exportModeViewport">当前画面</option>
+              </select>
+            </div>
+            <div class="toggle-list">
+              <label class="toggle-item">
+                <input id="linkToggle" type="checkbox" />
+                <span id="linkToggleText">显示同类模型连线</span>
+              </label>
+              <label class="toggle-item">
+                <input id="pyramidToggle" type="checkbox" checked />
+                <span id="gridToggleText">显示认知长方体网格</span>
+              </label>
+              <label class="toggle-item">
+                <input id="neighborToggle" type="checkbox" checked />
+                <span id="neighborToggleText">启用最近邻高亮</span>
+              </label>
             </div>
           </div>
-        </section>
-
-        <section id="toolbarTabCells" class="toolbar-tab-panel" role="tabpanel" aria-labelledby="tabCellsBtn" data-toolbar-panel="cells">
-          <div class="field">
-            <label id="cellFilterLabel" for="cellMultiSearchInput">空间单元检索（多选）</label>
-            <div id="cellPicker" class="model-picker">
-              <input id="cellMultiSearchInput" class="model-picker-search" type="text" placeholder="检索空间单元，例如：过去 / 战略层 / 元模型" />
-              <div id="cellMultiSummary" class="model-multi-summary">已选：全部空间单元</div>
-              <div id="cellMultiList" class="model-multi-list"></div>
-              <div class="model-multi-actions">
-                <button id="cellMultiSelectVisibleBtn" type="button">选择当前检索结果</button>
-                <button id="cellMultiSelectAllBtn" type="button">全选空间单元</button>
-                <button id="cellMultiClearBtn" type="button">清空选择</button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="toolbarTabVisual" class="toolbar-tab-panel" role="tabpanel" aria-labelledby="tabVisualBtn" data-toolbar-panel="visual">
-          <p id="visualSwitchTitle" class="preset-title">可视化</p>
-          <div class="field export-mode-field">
-            <label id="exportModeLabel" for="exportModeSelect">导出范围</label>
-            <select id="exportModeSelect">
-              <option value="full" id="exportModeFull">整张图</option>
-              <option value="viewport" id="exportModeViewport">当前画面</option>
-            </select>
-          </div>
-          <div class="toggle-list">
-            <label class="toggle-item">
-              <input id="linkToggle" type="checkbox" />
-              <span id="linkToggleText">显示同类模型连线</span>
-            </label>
-            <label class="toggle-item">
-              <input id="pyramidToggle" type="checkbox" checked />
-              <span id="gridToggleText">显示认知长方体网格</span>
-            </label>
-            <label class="toggle-item">
-              <input id="neighborToggle" type="checkbox" checked />
-              <span id="neighborToggleText">启用最近邻高亮</span>
-            </label>
-          </div>
-
-          <div id="legendText" class="legend">
-            拖拽旋转，滚轮缩放，右键平移。悬浮可查看名称，点击节点查看详情并高亮最近邻。
-          </div>
-          <div id="validationPanel" class="validation-panel" aria-live="polite"></div>
-        </section>
+        </details>
+        <div id="legendText" class="legend">拖拽旋转，滚轮缩放。点击节点查看详情。</div>
+        <div id="validationPanel" class="validation-panel" aria-live="polite"></div>
       </div>
     </section>
 
     <aside class="panel info">
       <div class="info-head">
-        <h2 id="modelPanelTitle">模型详情</h2>
+        <h2 id="modelPanelTitle">对象详情</h2>
         <div class="info-head-actions">
-          <button id="detailCoordToggleBtn" type="button" class="detail-head-btn">显示技术坐标</button>
-          <button id="detailExpandAllBtn" type="button" class="detail-head-btn">全部展开</button>
-          <button id="detailCollapseAllBtn" type="button" class="detail-head-btn">全部收起</button>
+          <details class="detail-advanced">
+            <summary id="detailAdvancedSummary">高级</summary>
+            <div class="detail-advanced-actions">
+              <button id="detailCoordToggleBtn" type="button" class="detail-head-btn">显示技术坐标</button>
+              <button id="detailExpandAllBtn" type="button" class="detail-head-btn">全部展开</button>
+              <button id="detailCollapseAllBtn" type="button" class="detail-head-btn">全部收起</button>
+            </div>
+          </details>
         </div>
       </div>
       <div class="info-scroll">
-        <div id="modelContent">点击 3D 节点查看模型定义、维度定位和核心资料。</div>
+        <div id="modelContent">点击 3D 节点查看对象定义、维度定位和核心资料。</div>
       </div>
     </aside>
   </div>
@@ -1208,26 +1281,29 @@
     <div class="dock-body">
       <div class="dock-group">
         <div class="global-language" aria-label="Language switch">
-          <span id="languageFinderText" class="language-finder">Language / 语言</span>
+          <span id="languageFinderText" class="language-finder">语言</span>
           <div class="language-buttons">
             <button type="button" class="lang-btn active" data-ui-lang="zh">中文</button>
             <button type="button" class="lang-btn" data-ui-lang="en">English</button>
           </div>
         </div>
-        <button id="overviewModeBtn" type="button" class="view-btn">返回总览</button>
-        <button id="viewResetBtn" type="button" class="view-btn">默认视角</button>
-        <button id="viewPromoBtn" type="button" class="view-btn">推广图视角</button>
-        <button id="viewXAxisBtn" type="button" class="view-btn">沿 X 轴看</button>
-        <button id="viewYAxisBtn" type="button" class="view-btn">沿 Y 轴看</button>
-        <button id="viewZAxisBtn" type="button" class="view-btn">沿 Z 轴看</button>
-      </div>
-      <div class="dock-group dock-actions">
-        <button id="toolbarToggleBtn" type="button" class="view-btn">隐藏工具栏</button>
-        <button id="detailToggleBtn" type="button" class="view-btn">隐藏详情</button>
-        <button id="shareCopyBtn" type="button" class="view-btn">复制分享链接</button>
-        <button id="exportImageBtn" type="button" class="view-btn">导出图片</button>
-        <button id="exportPosterBtn" type="button" class="view-btn">导出分享图</button>
-        <button id="fullscreenToggleBtn" type="button" class="view-btn">进入全屏</button>
+        <button id="viewResetBtn" type="button" class="view-btn">重置</button>
+        <button id="shareCopyBtn" type="button" class="view-btn">复制链接</button>
+        <details class="dock-advanced">
+          <summary id="dockAdvancedSummary">更多</summary>
+          <div class="dock-advanced-actions">
+            <button id="overviewModeBtn" type="button" class="view-btn">返回总览</button>
+            <button id="viewPromoBtn" type="button" class="view-btn">推广图视角</button>
+            <button id="viewXAxisBtn" type="button" class="view-btn">沿 X 轴看</button>
+            <button id="viewYAxisBtn" type="button" class="view-btn">沿 Y 轴看</button>
+            <button id="viewZAxisBtn" type="button" class="view-btn">沿 Z 轴看</button>
+            <button id="toolbarToggleBtn" type="button" class="view-btn">隐藏筛选</button>
+            <button id="detailToggleBtn" type="button" class="view-btn">隐藏详情</button>
+            <button id="exportImageBtn" type="button" class="view-btn">导出图片</button>
+            <button id="exportPosterBtn" type="button" class="view-btn">导出分享图</button>
+            <button id="fullscreenToggleBtn" type="button" class="view-btn">全屏</button>
+          </div>
+        </details>
       </div>
     </div>
   </div>

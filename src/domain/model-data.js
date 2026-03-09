@@ -1,61 +1,10 @@
 /**
  * domain/model-data — 模型解析、准入映射、校验聚合
  *
- * 职责：从原始 rows 构建三维坐标化模型数据，提供 category 配色与典型模型优先级。
+ * 职责：从遗留 rows 或知识对象输入构建 v2 Atlas 运行时数据，聚合准入、关系与显示元数据。
  * Traceability: M5 数据治理、Phase3 架构演进
  */
-
-const CATEGORY_STYLE = {
-  Expression: {
-    tags: ["表达", "沟通", "叙事"],
-    tagsEn: ["Expression", "Communication", "Narrative"],
-    slots: [
-      { xBucket: -1, y: 1, z: 1 },
-      { xBucket: 0, y: 1, z: 1 },
-      { xBucket: 1, y: 1, z: 1 },
-      { xBucket: 0, y: 1, z: 2 },
-      { xBucket: 1, y: 1, z: 2 }
-    ]
-  },
-  Structure: {
-    tags: ["结构化", "拆解", "框架"],
-    tagsEn: ["Structure", "Decomposition", "Framework"],
-    slots: [
-      { xBucket: -1, y: 2, z: 1 },
-      { xBucket: 1, y: 2, z: 2 }
-    ]
-  },
-  Diagnosis: {
-    tags: ["诊断", "根因", "风险"],
-    tagsEn: ["Diagnosis", "Root Cause", "Risk"],
-    slots: [
-      { xBucket: -1, y: 3, z: 1 },
-      { xBucket: 0, y: 3, z: 1 },
-      { xBucket: 0, y: 3, z: 2 }
-    ]
-  },
-  Strategy: {
-    tags: ["战略", "决策", "执行"],
-    tagsEn: ["Strategy", "Decision", "Execution"],
-    slots: [
-      { xBucket: 0, y: 3, z: 2 }, { xBucket: 1, y: 3, z: 2 },
-      { xBucket: 0, y: 3, z: 3 }, { xBucket: 1, y: 3, z: 3 },
-      { xBucket: -1, y: 3, z: 2 }, { xBucket: -1, y: 3, z: 3 },
-      { xBucket: 0, y: 4, z: 3 }, { xBucket: 1, y: 4, z: 3 }
-    ]
-  },
-  Meta: {
-    tags: ["元认知", "原则", "系统"],
-    tagsEn: ["Meta-Cognition", "Principle", "Systems"],
-    slots: [
-      { xBucket: -1, y: 4, z: 3 }, { xBucket: 0, y: 4, z: 3 }, { xBucket: 1, y: 4, z: 3 },
-      { xBucket: -1, y: 4, z: 4 }, { xBucket: 0, y: 4, z: 4 }, { xBucket: 1, y: 4, z: 4 },
-      { xBucket: 0, y: 3, z: 4 }, { xBucket: 1, y: 3, z: 4 }
-    ]
-  }
-};
-
-const FALLBACK_STYLE = CATEGORY_STYLE.Structure;
+import { classifyKnowledgeObject } from "./cognitive-atlas-v2.js";
 
 export const CATEGORY_COLOR_MAP = {
   Expression: 0x79d4ff,
@@ -85,61 +34,170 @@ function compactEnglishAnnotation(text) {
   return trimmed.length > 50 ? `${trimmed.slice(0, 47)}...` : trimmed;
 }
 
-function xFromBucket(bucket, stackIndex) {
-  const base = bucket === -1 ? -0.76 : bucket === 1 ? 0.76 : 0;
-  const pattern = [-0.16, -0.06, 0.06, 0.16, -0.22, 0.22, 0];
-  const ring = Math.floor(stackIndex / pattern.length);
-  const offset = pattern[stackIndex % pattern.length] * 0.58;
-  const drift = ring * 0.03 * (bucket === 0 ? 1 : bucket);
-  const jitter = Math.sin((stackIndex + 1) * 2.13) * 0.02;
-  return Number(clamp(base + offset + drift + jitter, -0.98, 0.98).toFixed(2));
+function slugify(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function normalizeLegacyRow(row) {
+  const [name, aliasZh, descriptionEn, category, yOverride, zOverride] = row;
+  return { name, aliasZh, descriptionEn, category, yOverride, zOverride };
+}
+
+function buildRelationIndex(relationEdges = []) {
+  return relationEdges.reduce((acc, edge) => {
+    if (!edge?.source || !edge?.target || !edge?.type) return acc;
+    if (!acc[edge.source]) acc[edge.source] = [];
+    acc[edge.source].push({
+      type: edge.type,
+      target: edge.target
+    });
+    return acc;
+  }, {});
+}
+
+export function createRelationIndex(relationEdges = []) {
+  return buildRelationIndex(relationEdges);
+}
+
+function getRelationTargetsByType(relations, type) {
+  return relations
+    .filter((relation) => relation?.type === type && relation?.target)
+    .map((relation) => relation.target);
+}
+
+function toRuntimeModel(entry, evaluationByName, relationIndexByName, opts = {}) {
+  const normalized = Array.isArray(entry) ? normalizeLegacyRow(entry) : entry;
+  const coordinatesByName = opts.coordinatesByName || {};
+  const {
+    name,
+    aliasZh,
+    descriptionEn,
+    category,
+    yOverride,
+    zOverride,
+    aliases = [],
+    relationEdges = []
+  } = normalized;
+  const evaluation = normalized.evaluation || evaluationByName?.[name]?.evaluation || null;
+  const explicitCoords = coordinatesByName[name];
+
+  let atlasV2 = normalized.atlasV2;
+  let axisRationale = normalized.axisRationale;
+
+  if (!atlasV2) {
+    const inferred = classifyKnowledgeObject(
+      { name, aliasZh, descriptionEn, category, yOverride, zOverride },
+      evaluation
+    );
+    if (explicitCoords?.coordinates && inferred?.coordinates) {
+      atlasV2 = {
+        ...inferred,
+        coordinates: {
+          ...inferred.coordinates,
+          primary: explicitCoords.coordinates
+        }
+      };
+      axisRationale = explicitCoords.axisRationale ?? axisRationale;
+    } else {
+      atlasV2 = inferred;
+    }
+  }
+
+  const primary = atlasV2?.coordinates?.primary || { x: 3, y: 3, z: 3 };
+  const effectiveAxisRationale = axisRationale ?? normalized.axisRationale ?? null;
+  const indexedRelations = relationIndexByName?.[name] || [];
+  const relations = relationEdges.length > 0 ? relationEdges : indexedRelations;
+  const objectType = atlasV2?.objectType || "Framework";
+  const summary = normalized.summary || aliasZh || descriptionEn || name;
+  const problem = normalized.problem || normalized.purpose || descriptionEn || aliasZh || name;
+  const whenToUse = normalized.whenToUse || normalized.purpose || descriptionEn || aliasZh || name;
+  const whyLearn = normalized.whyLearn || normalized.purpose || descriptionEn || aliasZh || name;
+  const tags = {
+    Expression: ["表达", "沟通", "叙事"],
+    Structure: ["结构化", "拆解", "框架"],
+    Diagnosis: ["诊断", "根因", "风险"],
+    Strategy: ["战略", "决策", "执行"],
+    Meta: ["元认知", "原则", "系统"]
+  }[category] || ["认知", "知识对象"];
+  const tagsEn = {
+    Expression: ["Expression", "Communication", "Narrative"],
+    Structure: ["Structure", "Decomposition", "Framework"],
+    Diagnosis: ["Diagnosis", "Root Cause", "Risk"],
+    Strategy: ["Strategy", "Decision", "Execution"],
+    Meta: ["Meta-Cognition", "Principle", "Systems"]
+  }[category] || ["Cognition", "Knowledge Object"];
+
+  return {
+    id: normalized.id || `ca.${slugify(objectType)}.${slugify(name)}.v1`,
+    name,
+    aliasZh,
+    aliasEn: compactEnglishAnnotation(descriptionEn),
+    aliases: [aliasZh, ...aliases].filter(Boolean),
+    x: primary.x,
+    y: primary.y,
+    z: primary.z,
+    category,
+    description: aliasZh,
+    descriptionEn,
+    evaluation,
+    atlasV2,
+    relations,
+    objectType,
+    tags,
+    tagsEn,
+    knowledgeObject: {
+      id: normalized.id || `ca.${slugify(objectType)}.${slugify(name)}.v1`,
+      name,
+      aliases: [aliasZh, ...aliases].filter(Boolean),
+      objectType,
+      summary,
+      problem,
+      whenToUse,
+      whenNotToUse: normalized.whenNotToUse || null,
+      commonMisuse: normalized.commonMisuse || null,
+      whyLearn,
+      prerequisite: getRelationTargetsByType(relations, "prerequisite"),
+      nextStep: getRelationTargetsByType(relations, "next_step"),
+      pairWith: getRelationTargetsByType(relations, "pair_with"),
+      practice: normalized.practice || null,
+      coordinates: atlasV2?.coordinates || { primary },
+      axisRationale: effectiveAxisRationale,
+      definition: descriptionEn,
+      purpose: normalized.purpose || descriptionEn,
+      origin: normalized.origin || null,
+      relations,
+      confidence: atlasV2?.confidence ?? 1,
+      status: evaluation?.stageA === "不纳入" ? "deprecated" : "active",
+      version: "v2.0.0"
+    }
+  };
 }
 
 /**
- * 从原始 rows 构建三维坐标化模型数据
- * @param {Array<Array>} rows - MODEL_LIBRARY_ROWS 格式
- * @param {Object} [evaluationByName] - MODEL_EVALUATION_BY_NAME，可选
- * @returns {Array} 模型对象列表
+ * 从遗留 rows 或知识对象构建 v2 运行时模型数据
+ * @param {Array<Array>|Array<Object>} source - 兼容 MODEL_LIBRARY_ROWS 或显式知识对象输入
+ * @param {Object} [evaluationByName]
+ * @param {Object} [options]
+ * @param {Object} [options.relationIndexByName]
+ * @param {Object} [options.coordinatesByName] - 显式坐标覆盖 { name: { coordinates, axisRationale } }
+ * @returns {Array}
  */
-export function buildModelData(rows, evaluationByName = {}) {
-  const categoryIndex = {};
-  const slotStack = {};
-
-  return rows.map((row) => {
-    const [name, aliasZh, descriptionEn, category, yOverride, zOverride] = row;
-    const evaluation = evaluationByName?.[name]?.evaluation || null;
-    const style = CATEGORY_STYLE[category] || FALLBACK_STYLE;
-    const idx = categoryIndex[category] || 0;
-    categoryIndex[category] = idx + 1;
-
-    const baseSlot = style.slots[idx % style.slots.length];
-    const y = Number.isFinite(yOverride) ? yOverride : baseSlot.y;
-    const z = Number.isFinite(zOverride) ? zOverride : baseSlot.z;
-
-    const slotKey = `${baseSlot.xBucket}|${y}|${z}`;
-    const stackIndex = slotStack[slotKey] || 0;
-    slotStack[slotKey] = stackIndex + 1;
-
-    return {
-      name,
-      aliasZh,
-      aliasEn: compactEnglishAnnotation(descriptionEn),
-      x: xFromBucket(baseSlot.xBucket, stackIndex),
-      y,
-      z,
-      category,
-      description: aliasZh,
-      descriptionEn,
-      evaluation,
-      tags: style.tags,
-      tagsEn: style.tagsEn
-    };
-  });
+export function buildModelData(source, evaluationByName = {}, options = {}) {
+  const relationIndexByName = options.relationIndexByName || {};
+  const coordinatesByName = options.coordinatesByName || {};
+  return source.map((entry) =>
+    toRuntimeModel(entry, evaluationByName, relationIndexByName, { coordinatesByName })
+  );
 }
 
 /**
  * 构建已准入模型数据（排除 stageA === "不纳入"）
  */
-export function createAdmittedModelData(rows, evaluationByName = {}) {
-  return buildModelData(rows, evaluationByName).filter((model) => model?.evaluation?.stageA !== "不纳入");
+export function createAdmittedModelData(source, evaluationByName = {}, options = {}) {
+  return buildModelData(source, evaluationByName, options)
+    .filter((model) => model?.evaluation?.stageA !== "不纳入")
+    .filter((model) => model?.atlasV2?.classificationStatus === "classified");
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 从 git diff data/model-library.js 提取模型级变更，生成可粘贴到 changelog 的 markdown 表格行。
+ * 从 git diff data/model-library.js 提取对象级变更，生成可粘贴到 changelog 的 markdown 表格行。
  * Usage: node scripts/changelog-diff.mjs
  *        npm run changelog:diff
  */
@@ -55,7 +55,7 @@ for (const name of modified) rows.push({ name, type: "modified" });
 for (const name of removedOnly) rows.push({ name, type: "removed" });
 
 if (rows.length === 0) {
-    console.log("# No model-level changes detected in diff");
+    console.log("# No object-level changes detected in diff");
     process.exit(0);
 }
 

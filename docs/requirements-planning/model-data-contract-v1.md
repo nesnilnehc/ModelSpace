@@ -1,6 +1,14 @@
-# 认知模型数据契约（Data Contract）v1.0
+# 认知模型数据契约（Data Contract）v1.1
 
 本文档定义了 `data/model-library.js` 中存储的模型数据结构、字段字典及强制校验规则。此契约用于确保模型数据的结构统一与内容质量，为自动化“内容校验”提供唯一的判断基准。
+
+## v1.1 变更摘要
+
+| 变更 | 说明 |
+|---|---|
+| 新增自动分类门禁 | 纳入对象必须在构建阶段自动得到 v2 类型与坐标 |
+| 入库策略收紧 | 无法自动分类对象不得进入 admitted 数据集 |
+| 规范引用 | v2 语义规范见 `docs/requirements-planning/cognitive-atlas-v2-system-spec.md` |
 
 ## 1. 核心模型列表 (`window.MODEL_LIBRARY_ROWS`)
 
@@ -19,6 +27,32 @@
 1. `descriptionEn` 长度必须 **>= 10 个字符**（防范无意义占位符）。
 2. `aliasZh` 长度必须 **>= 2 个字符**。
 3. `y` 和 `z` 如果存在，必须成对出现，且值域受限。
+
+---
+
+## 1.5 v2 运行时知识对象 (`window.COGNITIVE_ATLAS_OBJECTS`)
+
+在保留 legacy rows 兼容输入的同时，仓库现在会在 `data/model-library.js` 中构建显式知识对象数组，作为 Cognitive Atlas v2 的主运行时数据源。
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `id` | String | 规范化对象 ID，例如 `ca.framework.swot.v1` |
+| `name` | String | 英文标准名 |
+| `aliasZh` | String | 中文名称 |
+| `aliases` | String[] | 别名数组 |
+| `descriptionEn` | String | 英文定义 |
+| `category` | Enum | 兼容旧分组使用 |
+| `objectType` | Enum | v2 本体类型 |
+| `evaluation` | Object | 阶段A 准入结果 |
+| `atlasV2` | Object | 显式 v2 分类结果与主坐标 |
+| `purpose` | String | 用途说明 |
+| `references` | Object | 参考资源 |
+| `relations` | Array | 指向其他对象的关系边 |
+
+### 强制校验规则
+1. admitted 对象的 `atlasV2.classificationStatus` 必须为 `classified`。
+2. `atlasV2.coordinates.primary` 必须包含 `x/y/z` 三个主坐标值。
+3. `relations` 中的 `target` 必须引用已存在对象，`type` 必须属于允许的关系词表。
 
 ---
 

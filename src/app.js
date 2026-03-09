@@ -41,24 +41,35 @@ import { createDetailOrchestrator } from "./app3d/details.js";
 import {
   buildModelData,
   createAdmittedModelData,
+  createRelationIndex,
   CATEGORY_COLOR_MAP as categoryColorMap,
   CATEGORY_ORDER,
   TYPICAL_MODEL_PRIORITY
 } from "./domain/model-data.js";
 
+const relationIndexByName = createRelationIndex(window.COGNITIVE_ATLAS_RELATIONS || []);
+const sourceLibrary = window.COGNITIVE_ATLAS_OBJECTS || window.MODEL_LIBRARY_ROWS;
+
 window.ModelLayout = {
-  buildModelData(rows) {
-    return buildModelData(rows, window.MODEL_EVALUATION_BY_NAME);
+  buildModelData(source = sourceLibrary) {
+    return buildModelData(source, window.MODEL_EVALUATION_BY_NAME, { relationIndexByName });
   }
 };
 
-const modelData = createAdmittedModelData(
-  window.MODEL_LIBRARY_ROWS,
-  window.MODEL_EVALUATION_BY_NAME
+const allModelData = buildModelData(
+  sourceLibrary,
+  window.MODEL_EVALUATION_BY_NAME,
+  { relationIndexByName }
 );
 
-const SCALE = { x: 22, y: 12, z: 12 };
-const SEMANTIC_ORIGIN = { x: 0, y: 4, z: 4 };
+const modelData = createAdmittedModelData(
+  sourceLibrary,
+  window.MODEL_EVALUATION_BY_NAME,
+  { relationIndexByName }
+);
+
+const SCALE = { x: 11, y: 11, z: 11 };
+const SEMANTIC_ORIGIN = { x: 3, y: 3, z: 3 };
 const NEIGHBOR_COUNT = 2;
 const MAX_LINKS_PER_NODE = 2;
 
@@ -107,6 +118,10 @@ const {
   exportImageBtn,
   exportPosterBtn,
   fullscreenToggleBtn,
+  scopeStatus,
+  dockAdvancedSummary,
+  toolbarMoreSummary,
+  detailAdvancedSummary,
   dockExpandBtn,
   viewDock,
   overviewModeBtn,
@@ -177,6 +192,7 @@ const { getExportDataUrl, exportCanvasImage, exportPosterImage } = createExportS
   axisGroup,
   computeGridBands,
   scale: SCALE,
+  toWorldX,
   toWorldY,
   toWorldZ,
   visualConfig: VISUAL_CONFIG
@@ -297,7 +313,6 @@ bindAppInteractionEvents({
     },
     onModelSearchInput: (event) => {
       filterSelectionState.keyword = event.target.value.trim().toLowerCase();
-      rebuildModelMultiList();
       applyFilters();
     },
     onModelSelectVisible: () => {
@@ -325,8 +340,10 @@ bindAppInteractionEvents({
       applyFilters();
     },
     onModelClear: () => {
+      filterSelectionState.keyword = "";
       filterSelectionState.selectedModelNames.clear();
-      refreshModelMultiChecks();
+      modelData.forEach((m) => filterSelectionState.selectedModelNames.add(m.name));
+      if (modelMultiSearchInput) modelMultiSearchInput.value = "";
       applyFilters();
     },
     onCellSearchInput: (event) => {
@@ -418,7 +435,8 @@ bindAppInteractionEvents({
       urlStateController.syncUrlState();
     },
     onViewReset: () => {
-      focusCameraOnView("default");
+      enterOverviewMode({ resetCamera: true });
+      urlStateController.syncUrlState();
     },
     onViewPromo: () => {
       focusCameraOnView("promo");
@@ -539,8 +557,11 @@ function queuePointerMove(event) {
 }
 
 function setActiveToolbarTab(tabName) {
-  const availableTabs = new Set(["models", "cells", "visual"]);
-  const nextTab = availableTabs.has(tabName) ? tabName : "models";
+  const availableTabs = [...toolbarTabButtons]
+    .map((button) => button.dataset.toolbarTab)
+    .filter(Boolean);
+  const fallbackTab = availableTabs[0] || "models";
+  const nextTab = availableTabs.includes(tabName) ? tabName : fallbackTab;
   viewUiState.activeToolbarTab = nextTab;
   toolbarTabButtons.forEach((button) => {
     const isActive = button.dataset.toolbarTab === nextTab;
@@ -551,6 +572,24 @@ function setActiveToolbarTab(tabName) {
     panel.classList.toggle("active", panel.dataset.toolbarPanel === nextTab);
   });
   urlStateController.syncUrlState();
+}
+
+function updateScopeStatus() {
+  if (!scopeStatus) return;
+  const t = UI_TEXT[viewUiState.uiLanguage];
+  let value = t.scopeStatusOverview;
+
+  if (viewUiState.selectedMesh?.userData?.model) {
+    value = `${t.scopeStatusModel}: ${viewUiState.selectedMesh.userData.model.name}`;
+  } else {
+    const activeCellKey = viewUiState.focusedCell
+      || (filterSelectionState.selectedCellKeys.size === 1 ? [...filterSelectionState.selectedCellKeys][0] : null);
+    if (activeCellKey) {
+      value = `${t.scopeStatusCell}: ${getCellShortLabel(activeCellKey)}`;
+    }
+  }
+
+  scopeStatus.textContent = `${t.scopeStatusLabel}: ${value}`;
 }
 
 function isOverviewMode() {
@@ -606,8 +645,8 @@ function enterOverviewMode(options = {}) {
 
   filterSelectionState.keyword = "";
   filterSelectionState.cellKeyword = "";
-  modelMultiSearchInput.value = "";
-  cellMultiSearchInput.value = "";
+  if (modelMultiSearchInput) modelMultiSearchInput.value = "";
+  if (cellMultiSearchInput) cellMultiSearchInput.value = "";
   filterSelectionState.selectedModelNames.clear();
   modelData.forEach((model) => filterSelectionState.selectedModelNames.add(model.name));
   filterSelectionState.selectedCellKeys.clear();
@@ -616,8 +655,25 @@ function enterOverviewMode(options = {}) {
   rebuildModelMultiList();
   rebuildCellFilterOptions();
   applyFilters();
+  updateScopeStatus();
 
   if (resetCamera) focusCameraOnView("default");
+}
+
+function enterCellFocus(cellKey) {
+  viewUiState.visibilityMode = "focus";
+  viewUiState.focusedCell = cellKey;
+  viewUiState.selectedMesh = null;
+  rebuildLinks();
+  refreshNeighborHighlights();
+  refreshNodeStyles();
+  renderModelDetails();
+  updateScopeStatus();
+}
+
+function toWorldX(xLevel) {
+  const centeredLevel = xLevel - SEMANTIC_ORIGIN.x;
+  return centeredLevel * SCALE.x;
 }
 
 function toWorldY(yLevel) {
@@ -732,15 +788,12 @@ function buildNodes() {
 }
 
 function getXBucketValue(x) {
-  if (x <= -0.33) return "-1";
-  if (x >= 0.33) return "1";
-  return "0";
+  return String(Number(x));
 }
 
 function getCellCenter(cellKey) {
   const [xKey, yKey, zKey] = cellKey.split("|");
-  const xCenter = xKey === "-1" ? -0.75 : xKey === "1" ? 0.75 : 0;
-  return new THREE.Vector3(xCenter * SCALE.x, toWorldY(Number(yKey)), toWorldZ(Number(zKey)));
+  return new THREE.Vector3(toWorldX(Number(xKey)), toWorldY(Number(yKey)), toWorldZ(Number(zKey)));
 }
 
 function getModelMultiSummaryText() {
@@ -748,8 +801,9 @@ function getModelMultiSummaryText() {
   if (filterSelectionState.selectedModelNames.size === modelData.length) return t.modelMultiSummaryAll;
   if (filterSelectionState.selectedModelNames.size === 0) return t.modelMultiSummaryNone;
   const count = filterSelectionState.selectedModelNames.size;
-  if (viewUiState.uiLanguage === "zh") return `${t.modelMultiSummarySelected}：${count} 个模型`;
-  return `${t.modelMultiSummarySelected}: ${count} ${count === 1 ? "model" : "models"}`;
+  const unit = count === 1 && t.cellCountUnitSingular ? t.cellCountUnitSingular : t.cellCountUnit;
+  if (viewUiState.uiLanguage === "zh") return `${t.modelMultiSummarySelected}：${count} ${unit}`;
+  return `${t.modelMultiSummarySelected}: ${count} ${unit}`;
 }
 
 function getKeywordMatchedModels() {
@@ -758,6 +812,7 @@ function getKeywordMatchedModels() {
 }
 
 function rebuildModelMultiList() {
+  if (!modelMultiList) return;
   modelMultiList.innerHTML = "";
   const t = UI_TEXT[viewUiState.uiLanguage];
   const matched = getKeywordMatchedModels();
@@ -842,7 +897,7 @@ function rebuildModelMultiList() {
     groupSection.appendChild(groupContent);
     modelMultiList.appendChild(groupSection);
   }
-  modelMultiSummary.textContent = getModelMultiSummaryText();
+  if (modelMultiSummary) modelMultiSummary.textContent = getModelMultiSummaryText();
 }
 
 function refreshModelMultiChecks() {
@@ -927,7 +982,11 @@ function getCellStats(searchMatchedOnly = false) {
 
 function buildValidationSnapshot() {
   const stats = getCellStats(false);
-  const toolLayerCount = modelData.filter((model) => Number(model.z) === 1).length;
+  const toolLayerCount = modelData.filter((model) => model.objectType === "Tool").length;
+  const admittedUniverse = allModelData.filter((model) => model?.evaluation?.stageA !== "不纳入");
+  const unclassifiedCount = admittedUniverse
+    .filter((model) => model?.atlasV2?.classificationStatus !== "classified")
+    .length;
   const filledCells = stats.size;
   const denseCells = [...stats.values()].filter((cellStats) => cellStats.count >= 2).length;
   const denseRatio = filledCells > 0 ? denseCells / filledCells : 0;
@@ -937,6 +996,8 @@ function buildValidationSnapshot() {
 
   return {
     toolLayerCount,
+    admittedCount: admittedUniverse.length,
+    unclassifiedCount,
     filledCells,
     denseCells,
     denseRatio,
@@ -990,6 +1051,15 @@ function rebuildCellFilterOptions() {
   filterSelectionState.allCellKeys.length = 0;
   filterSelectionState.allCellKeys.push(...filterSelectionState.cellEntries.map((entry) => entry.key));
 
+  if (!cellMultiList) {
+    if (filterSelectionState.selectedCellKeys.size === 0 && filterSelectionState.allCellKeys.length > 0) {
+      filterSelectionState.selectedCellKeys.clear();
+      filterSelectionState.allCellKeys.forEach((key) => filterSelectionState.selectedCellKeys.add(key));
+    }
+    filterSelectionState.initializedCellSelection = true;
+    return;
+  }
+
   if (!filterSelectionState.initializedCellSelection) {
     filterSelectionState.selectedCellKeys.clear();
     filterSelectionState.allCellKeys.forEach((key) => filterSelectionState.selectedCellKeys.add(key));
@@ -1008,29 +1078,27 @@ function rebuildCellFilterOptions() {
     empty.className = "model-multi-empty";
     empty.textContent = t.cellMultiNoResult;
     cellMultiList.appendChild(empty);
+  } else {
+    for (const entry of matchedEntries) {
+      const tag = document.createElement("button");
+      tag.type = "button";
+      tag.className = `filter-tag ${filterSelectionState.selectedCellKeys.has(entry.key) ? "active" : ""}`;
+      tag.textContent = getCellShortLabel(entry.key);
+      tag.title = entry.label;
+      tag.setAttribute("aria-pressed", filterSelectionState.selectedCellKeys.has(entry.key) ? "true" : "false");
+      tag.addEventListener("click", () => {
+        if (filterSelectionState.selectedCellKeys.has(entry.key)) {
+          filterSelectionState.selectedCellKeys.delete(entry.key);
+        } else {
+          filterSelectionState.selectedCellKeys.add(entry.key);
+        }
+        rebuildCellFilterOptions();
+        applyFilters();
+      });
+      cellMultiList.appendChild(tag);
+    }
   }
-
-  for (let index = 0; index < matchedEntries.length; index++) {
-    const entry = matchedEntries[index];
-    const tag = document.createElement("button");
-    tag.type = "button";
-    tag.className = `filter-tag ${filterSelectionState.selectedCellKeys.has(entry.key) ? "active" : ""}`;
-    tag.textContent = getCellShortLabel(entry.key);
-    tag.title = `${entry.label}`;
-    tag.setAttribute("aria-pressed", filterSelectionState.selectedCellKeys.has(entry.key) ? "true" : "false");
-    tag.addEventListener("click", () => {
-      if (filterSelectionState.selectedCellKeys.has(entry.key)) {
-        filterSelectionState.selectedCellKeys.delete(entry.key);
-      } else {
-        filterSelectionState.selectedCellKeys.add(entry.key);
-      }
-      rebuildCellFilterOptions();
-      applyFilters();
-    });
-    cellMultiList.appendChild(tag);
-  }
-
-  cellMultiSummary.textContent = getCellMultiSummaryText();
+  if (cellMultiSummary) cellMultiSummary.textContent = getCellMultiSummaryText();
 }
 
 function rebuildCellBadges() {
@@ -1082,21 +1150,21 @@ function applyUILanguage() {
   if (aboutAxisYShort) aboutAxisYShort.textContent = t.aboutAxisYShort;
   if (aboutAxisZShort) aboutAxisZShort.textContent = t.aboutAxisZShort;
   if (aboutWho) aboutWho.textContent = t.aboutWho;
-  tabModelsBtn.textContent = t.toolbarTabModels;
-  tabCellsBtn.textContent = t.toolbarTabCells;
-  tabVisualBtn.textContent = t.toolbarTabVisual;
-  modelMultiLabel.textContent = t.modelMultiLabel;
-  modelMultiSearchInput.placeholder = t.modelMultiSearchPlaceholder;
-  modelMultiSelectVisibleBtn.textContent = t.modelMultiSelectVisible;
-  modelMultiSelectAllBtn.textContent = t.modelMultiSelectAll;
-  modelMultiClearBtn.textContent = t.modelMultiClear;
+  if (tabModelsBtn) tabModelsBtn.textContent = t.toolbarTabModels;
+  if (tabCellsBtn) tabCellsBtn.textContent = t.toolbarTabCells;
+  if (tabVisualBtn) tabVisualBtn.textContent = t.toolbarTabVisual;
+  if (modelMultiLabel) modelMultiLabel.textContent = t.modelMultiLabel;
+  if (modelMultiSearchInput) modelMultiSearchInput.placeholder = t.modelMultiSearchPlaceholder;
+  if (modelMultiSelectVisibleBtn) modelMultiSelectVisibleBtn.textContent = t.modelMultiSelectVisible;
+  if (modelMultiSelectAllBtn) modelMultiSelectAllBtn.textContent = t.modelMultiSelectAll;
+  if (modelMultiClearBtn) modelMultiClearBtn.textContent = t.modelMultiClear;
   if (modelMultiExpandGroupsBtn) modelMultiExpandGroupsBtn.textContent = t.modelMultiExpandGroups;
   if (modelMultiCollapseGroupsBtn) modelMultiCollapseGroupsBtn.textContent = t.modelMultiCollapseGroups;
-  cellFilterLabel.textContent = t.cellFilterLabel;
-  cellMultiSearchInput.placeholder = t.cellMultiSearchPlaceholder;
-  cellMultiSelectVisibleBtn.textContent = t.cellMultiSelectVisible;
-  cellMultiSelectAllBtn.textContent = t.cellMultiSelectAll;
-  cellMultiClearBtn.textContent = t.cellMultiClear;
+  if (cellFilterLabel) cellFilterLabel.textContent = t.cellFilterLabel;
+  if (cellMultiSearchInput) cellMultiSearchInput.placeholder = t.cellMultiSearchPlaceholder;
+  if (cellMultiSelectVisibleBtn) cellMultiSelectVisibleBtn.textContent = t.cellMultiSelectVisible;
+  if (cellMultiSelectAllBtn) cellMultiSelectAllBtn.textContent = t.cellMultiSelectAll;
+  if (cellMultiClearBtn) cellMultiClearBtn.textContent = t.cellMultiClear;
   linkToggleText.textContent = t.linkToggleText;
   gridToggleText.textContent = t.gridToggleText;
   neighborToggleText.textContent = t.neighborToggleText;
@@ -1106,11 +1174,14 @@ function applyUILanguage() {
   if (viewXAxisBtn) viewXAxisBtn.textContent = t.viewXAxisText;
   if (viewYAxisBtn) viewYAxisBtn.textContent = t.viewYAxisText;
   if (viewZAxisBtn) viewZAxisBtn.textContent = t.viewZAxisText;
-  visualSwitchTitle.textContent = t.visualSwitchTitle;
+  if (visualSwitchTitle) visualSwitchTitle.textContent = t.visualSwitchTitle;
   legendText.textContent = window.matchMedia("(max-width: 768px)").matches
     ? (t.legendTextMobile ?? t.legendText)
     : t.legendText;
   modelPanelTitle.textContent = t.modelPanelTitle;
+  if (dockAdvancedSummary) dockAdvancedSummary.textContent = t.dockAdvancedSummary;
+  if (toolbarMoreSummary) toolbarMoreSummary.textContent = t.toolbarAdvancedSummary;
+  if (detailAdvancedSummary) detailAdvancedSummary.textContent = t.detailAdvancedSummary;
   updateDetailCoordToggleButton();
   if (detailExpandAllBtn) detailExpandAllBtn.textContent = t.detailExpandAllText;
   if (detailCollapseAllBtn) detailCollapseAllBtn.textContent = t.detailCollapseAllText;
@@ -1135,6 +1206,7 @@ function applyUILanguage() {
   applyFilters();
   renderModelDetails();
   updateViewControlsState();
+  updateScopeStatus();
   if (viewUiState.hoveredMesh) {
     showTooltip(lastPointerClient.x, lastPointerClient.y, getModelLabel(viewUiState.hoveredMesh.userData.model));
   }
@@ -1193,9 +1265,9 @@ function buildAxis() {
   const axisColorY = 0x6eefd8;
   const axisColorZ = 0x7eb4ff;
   const tickMaterial = new THREE.LineBasicMaterial({ color: 0xa0b0dc });
-  const xValues = [-1, 0, 1].map((x) => x * SCALE.x);
-  const yValues = [1, 2, 3, 4].map((y) => toWorldY(y));
-  const zValues = [1, 2, 3, 4].map((z) => toWorldZ(z));
+  const xValues = [1, 2, 3, 4, 5].map((x) => toWorldX(x));
+  const yValues = [1, 2, 3, 4, 5].map((y) => toWorldY(y));
+  const zValues = [1, 2, 3, 4, 5].map((z) => toWorldZ(z));
   const xMin = Math.min(...xValues);
   const xMax = Math.max(...xValues);
   const yMin = Math.min(...yValues);
@@ -1237,8 +1309,8 @@ function buildAxis() {
   axisGroup.add(origin);
 
   const axisLabelOpts = { background: "rgba(12, 20, 40, 0.88)", border: "rgba(160, 200, 255, 0.72)", textColor: "rgba(245, 250, 255, 0.98)" };
-  for (const x of [-1, 0, 1]) {
-    const p = new THREE.Vector3(x * SCALE.x, 0, 0);
+  for (const x of [1, 2, 3, 4, 5]) {
+    const p = new THREE.Vector3(toWorldX(x), 0, 0);
     axisGroup.add(
       makeLine(new THREE.Vector3(p.x, -0.7, 0), new THREE.Vector3(p.x, 0.7, 0), tickMaterial)
     );
@@ -1247,7 +1319,7 @@ function buildAxis() {
     axisGroup.add(label);
   }
 
-  for (const y of [1, 2, 3, 4]) {
+  for (const y of [1, 2, 3, 4, 5]) {
     const p = new THREE.Vector3(0, toWorldY(y), 0);
     axisGroup.add(
       makeLine(new THREE.Vector3(-0.7, p.y, 0), new THREE.Vector3(0.7, p.y, 0), tickMaterial)
@@ -1257,7 +1329,7 @@ function buildAxis() {
     axisGroup.add(label);
   }
 
-  for (const z of [1, 2, 3, 4]) {
+  for (const z of [1, 2, 3, 4, 5]) {
     const p = new THREE.Vector3(0, 0, toWorldZ(z));
     axisGroup.add(
       makeLine(new THREE.Vector3(-0.7, 0, p.z), new THREE.Vector3(0.7, 0, p.z), tickMaterial)
@@ -1296,9 +1368,9 @@ function buildAxis() {
 function buildSpaceGrid() {
   clearGroup(pyramidGroup);
 
-  const xBand = computeGridBands([-1, 0, 1].map((x) => x * SCALE.x), SCALE.x);
-  const yBand = computeGridBands([1, 2, 3, 4].map((y) => toWorldY(y)), SCALE.y);
-  const zBand = computeGridBands([1, 2, 3, 4].map((z) => toWorldZ(z)), SCALE.z);
+  const xBand = computeGridBands([1, 2, 3, 4, 5].map((x) => toWorldX(x)), SCALE.x);
+  const yBand = computeGridBands([1, 2, 3, 4, 5].map((y) => toWorldY(y)), SCALE.y);
+  const zBand = computeGridBands([1, 2, 3, 4, 5].map((z) => toWorldZ(z)), SCALE.z);
 
   const xMin = xBand.min;
   const xMax = xBand.max;
@@ -1428,6 +1500,7 @@ function applyFilters() {
   refreshNodeStyles();
   renderModelDetails();
   updateViewControlsState();
+  updateScopeStatus();
   urlStateController.syncUrlState();
 }
 
@@ -1689,12 +1762,8 @@ function onSceneClick(event) {
       const badgeIntersects = raycaster.intersectObjects(cellBadgeGroup.children, true);
       const cellBadge = pickCellBadge(badgeIntersects);
       if (cellBadge) {
-        viewUiState.visibilityMode = "focus";
-        viewUiState.focusedCell = cellBadge.userData.cellKey;
-        viewUiState.selectedMesh = null;
-        rebuildLinks();
-        refreshNodeStyles();
-        renderModelDetails();
+        enterCellFocus(cellBadge.userData.cellKey);
+        urlStateController.syncUrlState();
         return;
       }
     }
@@ -1717,6 +1786,7 @@ function selectNode(mesh) {
   refreshNeighborHighlights();
   refreshNodeStyles();
   renderModelDetails();
+  updateScopeStatus();
 }
 
 function focusModelByName(modelName) {
@@ -1725,8 +1795,8 @@ function focusModelByName(modelName) {
 
   filterSelectionState.keyword = "";
   filterSelectionState.cellKeyword = "";
-  modelMultiSearchInput.value = "";
-  cellMultiSearchInput.value = "";
+  if (modelMultiSearchInput) modelMultiSearchInput.value = "";
+  if (cellMultiSearchInput) cellMultiSearchInput.value = "";
   filterSelectionState.selectedModelNames.add(modelName);
   filterSelectionState.selectedCellKeys.add(mesh.userData.cellKey);
 
@@ -1741,7 +1811,7 @@ function buildExportFileName() {
   if (filterSelectionState.selectedCellKeys.size === 1
     && filterSelectionState.allCellKeys.length > 1) {
     const [cellKey] = [...filterSelectionState.selectedCellKeys];
-    return `modelspace-cell-${cellKey.replace(/\|/g, "-")}-${date}.png`;
+    return `cognitive-atlas-cell-${cellKey.replace(/\|/g, "-")}-${date}.png`;
   }
 
   const selectedModels = modelData
@@ -1750,11 +1820,11 @@ function buildExportFileName() {
     const categorySet = new Set(selectedModels.map((model) => model.category));
     if (categorySet.size === 1) {
       const [category] = [...categorySet];
-      return `modelspace-category-${String(category).toLowerCase()}-${date}.png`;
+      return `cognitive-atlas-category-${String(category).toLowerCase()}-${date}.png`;
     }
   }
 
-  return `modelspace-${date}.png`;
+  return `cognitive-atlas-${date}.png`;
 }
 
 function getVisibleModelsByCellKey(cellKey) {
@@ -1764,9 +1834,9 @@ function getVisibleModelsByCellKey(cellKey) {
 }
 
 function fitCameraToCognitiveSpace() {
-  const xBand = computeGridBands([-1, 0, 1].map((x) => x * SCALE.x), SCALE.x);
-  const yBand = computeGridBands([1, 2, 3, 4].map((y) => toWorldY(y)), SCALE.y);
-  const zBand = computeGridBands([1, 2, 3, 4].map((z) => toWorldZ(z)), SCALE.z);
+  const xBand = computeGridBands([1, 2, 3, 4, 5].map((x) => toWorldX(x)), SCALE.x);
+  const yBand = computeGridBands([1, 2, 3, 4, 5].map((y) => toWorldY(y)), SCALE.y);
+  const zBand = computeGridBands([1, 2, 3, 4, 5].map((z) => toWorldZ(z)), SCALE.z);
   const padding = 12;
   const bounds = new THREE.Box3(
     new THREE.Vector3(xBand.min - padding, yBand.min - padding, zBand.min - padding),

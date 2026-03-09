@@ -53,14 +53,15 @@ function getCognitiveSpaceBoundsInPixels({
   camera,
   computeGridBands,
   scale,
+  toWorldX,
   toWorldY,
   toWorldZ,
   tight,
   exportCropMargin
 }) {
-  const xBand = computeGridBands([-1, 0, 1].map((x) => x * scale.x), scale.x);
-  const yBand = computeGridBands([1, 2, 3, 4].map((y) => toWorldY(y)), scale.y);
-  const zBand = computeGridBands([1, 2, 3, 4].map((z) => toWorldZ(z)), scale.z);
+  const xBand = computeGridBands([1, 2, 3, 4, 5].map((x) => toWorldX(x)), scale.x);
+  const yBand = computeGridBands([1, 2, 3, 4, 5].map((y) => toWorldY(y)), scale.y);
+  const zBand = computeGridBands([1, 2, 3, 4, 5].map((z) => toWorldZ(z)), scale.z);
   const padding = tight ? 2 : 14;
   const box = new THREE.Box3(
     new THREE.Vector3(xBand.min - padding, yBand.min - padding, zBand.min - padding),
@@ -92,6 +93,7 @@ export function createExportService({
   axisGroup,
   computeGridBands,
   scale,
+  toWorldX,
   toWorldY,
   toWorldZ,
   visualConfig
@@ -135,6 +137,7 @@ export function createExportService({
           camera,
           computeGridBands,
           scale,
+          toWorldX,
           toWorldY,
           toWorldZ,
           tight: true,
@@ -172,14 +175,14 @@ export function createExportService({
     getExportDataUrl(options).then((dataUrl) => {
       const anchor = document.createElement("a");
       anchor.href = dataUrl;
-      anchor.download = fileName || `modelspace-${new Date().toISOString().slice(0, 10)}.png`;
+      anchor.download = fileName || `cognitive-atlas-${new Date().toISOString().slice(0, 10)}.png`;
       anchor.click();
     });
   }
 
   async function getExportPosterDataUrl(options = {}) {
-    const title = options.title ?? "MODEL SPACE";
-    const subtitle = options.subtitle ?? "Cognitive Space Visualization";
+    const title = options.title ?? "COGNITIVE ATLAS";
+    const subtitle = options.subtitle ?? "Typed cognitive knowledge graph";
     const imgDataUrl = await getExportDataUrl({ mode: "viewport", targetBox: options.targetBox });
 
     const width = 1200;
@@ -282,7 +285,7 @@ export function createExportService({
     ctx.font = "14px monospace";
     ctx.textAlign = "right";
     const dateStr = new Date().toISOString().slice(0, 10);
-    ctx.fillText(`ID: ${dateStr} // MODEL_SPACE_RENDER`, width - padding - 10, height - padding - 10);
+    ctx.fillText(`ID: ${dateStr} // COGNITIVE_ATLAS_RENDER`, width - padding - 10, height - padding - 10);
 
     return canvas.toDataURL("image/png");
   }
@@ -295,7 +298,7 @@ export function createExportService({
     getExportPosterDataUrl(options).then((dataUrl) => {
       const anchor = document.createElement("a");
       anchor.href = dataUrl;
-      anchor.download = `modelspace-share-${new Date().toISOString().slice(0, 10)}.png`;
+      anchor.download = `cognitive-atlas-share-${new Date().toISOString().slice(0, 10)}.png`;
       anchor.click();
     });
   }

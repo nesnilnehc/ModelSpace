@@ -79,11 +79,11 @@ export function createUrlStateController(options) {
 
       if (state.keyword) {
         filterSelectionState.keyword = state.keyword.toLowerCase();
-        modelMultiSearchInput.value = state.keyword;
+        if (modelMultiSearchInput) modelMultiSearchInput.value = state.keyword;
       }
       if (state.cellKeyword) {
         filterSelectionState.cellKeyword = state.cellKeyword.toLowerCase();
-        cellMultiSearchInput.value = state.cellKeyword;
+        if (cellMultiSearchInput) cellMultiSearchInput.value = state.cellKeyword;
       }
 
       applyUILanguage();

@@ -1,12 +1,12 @@
-# 模型库变更日志 (Model Library Changelog)
+# 知识对象库变更日志 (Model Library Changelog)
 
-按模型粒度记录 `data/model-library.js` 的新增、修改与删除，便于追溯与审计。
+按对象粒度记录 `data/model-library.js` 的新增、修改与删除，便于追溯与审计。
 
 ---
 
 ## 维护规则
 
-- 每次对 `data/model-library.js` 的 **新增 / 修改 / 删除** 模型，须在合并前于本 changelog 追加一条记录
+- 每次对 `data/model-library.js` 的 **新增 / 修改 / 删除** 对象，须在合并前于本 changelog 追加一条记录
 - **变更类型**：`added` | `modified` | `removed`
 - **日期**：变更合并日期（YYYY-MM-DD）
 - **原因/摘要**：简要说明变更原因或内容
@@ -17,6 +17,6 @@
 
 ## 变更记录
 
-| 日期 | 模型 | 变更类型 | 原因/摘要 |
+| 日期 | 对象 | 变更类型 | 原因/摘要 |
 |------|------|----------|-----------|
 | 2026-03-06 | (all) | — | 初始版本；changelog 机制建立 |

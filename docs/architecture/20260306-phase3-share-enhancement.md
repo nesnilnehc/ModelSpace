@@ -24,7 +24,7 @@
 |----|----|------|
 | l | lang | 语言 |
 | v | view | 视角 |
-| m | models | 选中模型 |
+| m | models | 选中对象 |
 | c | cells | 空间单元 |
 | t | tab | 工具栏标签 |
 | ln | link | 连线开关 |

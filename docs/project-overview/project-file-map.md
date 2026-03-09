@@ -7,18 +7,19 @@
 | 文件 | 作用 |
 | --- | --- |
 | `.gitignore` | 忽略 macOS 垃圾文件与本地临时截图（`.tmp-*.png`）。 |
-| `README.md` | 项目概览、运行方式、维护命令与结构索引。 |
-| `index.html` | 入口页；保留 query/hash 并重定向到 `cognitive-model-3d.html`。 |
+| `README.md` | Cognitive Atlas 项目概览、运行方式、维护命令与结构索引。 |
+| `index.html` | 主入口页；保留 query/hash 并重定向到 `cognitive-atlas.html`。 |
+| `cognitive-atlas.html` | Cognitive Atlas 品牌入口页；兼容 query/hash 后跳转到 legacy route。 |
 | `embed.html` | 嵌入入口页；强制 `simple=1&embed=1` 并保留原 query/hash。 |
-| `cognitive-model-3d.html` | 3D 界面的 HTML/CSS 容器与控件定义；通过 importmap 加载 Three.js 与主模块。 |
+| `cognitive-model-3d.html` | legacy route；仍承载主应用 HTML/CSS 容器与控件定义。 |
 
 ## 数据与源码
 
 | 文件 | 作用 |
 | --- | --- |
-| `data/model-library.js` | 模型原始数据源（`MODEL_LIBRARY_ROWS`），并构建证据包、参考资源、阶段A准入结果与汇总。 |
-| `src/app.js` | 应用编排层：Three.js 场景初始化、状态流串联、过滤与渲染主流程。 |
-| `src/domain/model-data.js` | 模型解析、准入映射：从 rows 构建三维坐标化模型数据，提供 category 配色与典型模型优先级；抽离自 layout.js。 |
+| `data/model-library.js` | legacy rows、证据包、参考资源、阶段A准入结果，以及 Cognitive Atlas 关系边定义。 |
+| `src/app.js` | 应用编排层：Three.js 场景初始化、Atlas 坐标渲染、状态流串联、过滤与渲染主流程。 |
+| `src/domain/model-data.js` | 知识对象整形与准入映射：从 legacy rows 或对象输入构建 v2 运行时数据。 |
 
 ## 自动化与脚本
 
@@ -35,7 +36,7 @@
 
 | 文件 | 作用 |
 | --- | --- |
-| `src/app3d/i18n.js` | 中英文文案与坐标轴文本常量。 |
+| `src/app3d/i18n.js` | 中英文文案与 Cognitive Atlas v2 坐标轴文本常量。 |
 | `src/app3d/filters.js` | 检索文本拼接、单行轴标签、名称缩写、空间单元键排序工具。 |
 | `src/app3d/state.js` | 筛选与选择状态初始化模块：关键词、模型/空间多选集合及其初始化状态。 |
 | `src/app3d/scene.js` | Three.js 场景通用工具：单元偏移、网格带计算、线段构建、组清理、文字精灵。 |
@@ -61,7 +62,8 @@
 | `docs/project-overview/goals.md` | 项目目标：核心、战略、数据治理与非目标。 |
 | `docs/process-management/backlog.md` | 从 roadmap 抽取的待办清单；支持 traceability 与 execution-alignment。 |
 | `docs/changelog/model-library-changelog.md` | 模型库变更日志；按模型粒度记录新增/修改/删除。 |
-| `docs/requirements-planning/model-classification-standard.md` | 模型准入与三维分类的规范标准（v1.1）。 |
+| `docs/requirements-planning/model-classification-standard.md` | legacy 准入与分类标准，兼容旧 3D 版本说明。 |
+| `docs/requirements-planning/cognitive-atlas-v2-system-spec.md` | Cognitive Atlas v2 主规范：名称、坐标、类型系统、关系与门禁。 |
 | `docs/requirements-planning/20260304-model-admission-classification.md` | 2026-03-04 批次模型准入与三维分类结果总表。 |
 | `docs/designs/2026-03-05-iteration-roadmap.md` | 后续迭代路线设计草案（A/B/C 路线、阶段目标、验收标准）。 |
 | `docs/designs/2026-03-06-phase3-architecture-evolution.md` | Phase 3 分发深化 & 架构演进规划（可选方向与优先级）。 |

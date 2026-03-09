@@ -1,4 +1,4 @@
-# ModelSpace M4 质量基线交付说明
+# Cognitive Atlas M4 质量基线交付说明
 
 **Date:** 2026-03-05  
 **Status:** Implemented

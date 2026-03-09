@@ -136,7 +136,7 @@ async function run() {
       });
     });
 
-    await page.goto(`${baseUrl}/cognitive-model-3d.html`, { waitUntil: "networkidle", timeout: 30000 });
+    await page.goto(`${baseUrl}/cognitive-atlas.html`, { waitUntil: "networkidle", timeout: 30000 });
     await page.waitForSelector("#appTitle", { timeout: 15000 });
 
     const readyTimeoutMs = 30000;

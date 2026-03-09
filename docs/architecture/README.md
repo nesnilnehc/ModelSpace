@@ -1,14 +1,14 @@
-# Architecture 文档索引
+# Cognitive Atlas Architecture 文档索引
 
 **Date:** 2026-03-06  
-**用途：** 里程碑交付说明与架构决策索引，支持 traceback 与 execution-alignment。
+**用途：** Cognitive Atlas 的里程碑交付说明与架构决策索引，支持 traceback 与 execution-alignment。
 
 ---
 
 ## 里程碑交付文档
 
 | 里程碑 | 文档 | 状态 |
-|--------|------|------|
+| -------- | ------ | ------ |
 | M1 工程基线 | [20260305-m1-module-boundaries-event-flow.md](20260305-m1-module-boundaries-event-flow.md) | 已完成 |
 | M2 学习体验 | [20260305-m2-m3-delivery.md](20260305-m2-m3-delivery.md) | 已完成 |
 | M3 分发能力 | [20260305-m2-m3-delivery.md](20260305-m2-m3-delivery.md) | 已完成 |

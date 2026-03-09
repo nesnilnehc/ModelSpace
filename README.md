@@ -1,24 +1,24 @@
-# ModelSpace
+# Cognitive Atlas
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-![ModelSpace – 认知模型三维坐标系](docs/assets/modelspace-promo.png)
+![Cognitive Atlas – Knowledge Map for Cognitive Objects](docs/assets/cognitive-atlas-promo.png)
 
-A frontend-only 3D visualization of cognitive models, mapping them along **X (time-orientation) × Y (control depth) × Z (abstraction level)**. Browse, filter, and inspect model details in an interactive Three.js scene.
+`Cognitive Atlas` is a knowledge map for cognitive objects (models, frameworks, principles, methods, tools, etc.). It helps people quickly find the right object, understand when to use it, and keep learning through nearby related objects.
+
+Under the surface, the Atlas keeps a stable coordinate system, typed knowledge objects, and graph relations so the same knowledge can also be referenced by AI systems in a structured way.
 
 ---
 
 ## ✨ Features
 
-- **3D coordinate layout**: Models positioned by time-orientation, control depth, and abstraction level
-- **Interactive scene**: Orbit controls (rotate, zoom, pan) with grid and axis labels
-- **Filtering**: Filter by category, dimension values, and text search
-- **Detail panels**: Expandable model details with evidence bundles, references, and admission metadata
-- **Learning flow**: Cell-focus learning path and related-model grouping in details
+- **Find and compare objects quickly**: browse a 3D atlas of models, frameworks, principles, methods, and tools
+- **Learn by following connections**: jump through nearby, related, and same-cell objects to continue exploring
+- **Human-first, machine-solid structure**: the UI stays readable while `objectType`, coordinates, relations, confidence, and status remain structured underneath
 - **Shareable state**: URL query keeps language, view, filters, and panel state for sharing
-- **Embed mode**: Lightweight embedded entry (`embed.html`)
+- **Embed mode**: lightweight embedded entry (`embed.html`) plus branded entry alias support
 - **i18n**: Chinese and English support
-- **CI validation**: GitHub Actions runs structure + content validation, E2E regression, and perf budget on push/PR; **failures block merge**
+- **Validation gates**: structure, content, E2E, and perf checks keep the Atlas consistent as it grows
 
 ---
 
@@ -33,12 +33,15 @@ No build step. Requires a static HTTP server and a modern browser.
 ## 🚀 Quick start
 
 ```bash
-git clone https://github.com/NESNILNEHC/ModelSpace.git
-cd ModelSpace
+git clone https://github.com/NESNILNEHC/Cognitive-Atlas.git
+cd Cognitive-Atlas
 python3 -m http.server 8000
 ```
 
-Open [http://localhost:8000](http://localhost:8000). The index redirects to the 3D view (`cognitive-model-3d.html`).
+If port 8000 is in use, try another port: `python3 -m http.server 8001` and open `http://localhost:8001`.  
+Or use `npx serve` (picks an available port automatically).
+
+Open [http://localhost:8000](http://localhost:8000). The index redirects to the branded entry page (`cognitive-atlas.html`), while the legacy route (`cognitive-model-3d.html`) remains supported for compatibility.
 
 ### Deploy to GitHub Pages
 
@@ -46,7 +49,7 @@ Open [http://localhost:8000](http://localhost:8000). The index redirects to the 
 2. Go to **Settings → Pages**.
 3. Source: **Deploy from a branch**.
 4. Branch: `main`, folder: `/ (root)`.
-5. Save. The site will be at `https://nesnilnehc.github.io/ModelSpace/`.
+5. Save. The site will be available at `https://<username>.github.io/Cognitive-Atlas/` (or your repository path).
 
 No build step needed. The project uses relative paths, so it runs correctly under the project subpath.
 
@@ -54,11 +57,10 @@ No build step needed. The project uses relative paths, so it runs correctly unde
 
 ## 📖 Usage / configuration
 
-- **View presets**: Top/front/side views from the dock
-- **Filters**: Use the control panel to filter by category, dimensions, or text
-- **Details**: Click a model node to open the detail panel
-- **Language**: Switch between 中文 and English in the UI
-- **State sharing**: Copy browser URL to share current view/filter/language state
+- **Search**: type an object name or term (e.g. MECE / OKR) to filter the 3D view
+- **Explore**: click a node to see what it is, when to use it, and related objects
+- **Language**: switch between 中文 and English in the UI
+- **State sharing**: copy the browser URL to share the current view/filter/language state
 
 ### Embed mode
 
@@ -90,22 +92,24 @@ npm run export-promo
 rm -f .tmp-*.png
 ```
 
-To update the promo image: run `npm run export-promo` (with the server running on port 8080), or open the 3D view, click **推广图视角** and **导出图片**, then save as `docs/assets/modelspace-promo.png`.
+To update the promo image: run `npm run export-promo` (with the server running on port 8080), or open the Atlas view, click **推广图视角** and **导出图片**, then save as `docs/assets/cognitive-atlas-promo.png`.
 
 ### Project structure
 
 | Path | Purpose |
-|------|---------|
-| `index.html` | Entry redirect to 3D view |
-| `cognitive-model-3d.html` | 3D page shell, layout, importmap |
-| `data/model-library.js` | Model data, evidence bundles, references |
-| `src/app.js` | Main app logic (render, filters, details, i18n) |
-| `src/domain/model-data.js` | Model parsing, admission mapping (coordinates, category colors, typical priorities) |
+| ------ | ------- |
+| `index.html` | Entry redirect to the branded Atlas page |
+| `cognitive-atlas.html` | Primary branded entry route |
+| `cognitive-model-3d.html` | Legacy route alias kept for compatibility |
+| `data/model-library.js` | Legacy source rows, evidence bundles, references, and relation edges |
+| `src/app.js` | Main app logic (render, filters, details, i18n, validation) |
+| `src/domain/model-data.js` | Knowledge object shaping, admission mapping, v2 coordinate projection, relation payload assembly |
 | `src/app3d/*.js` | Reusable modules (i18n, filters, scene, interaction, export, URL state, detail orchestration) |
 | `scripts/validate-model-data.mjs` | Data validation script |
-| `docs/` | Classification standards, architecture, design docs |
+| `docs/` | Classification standards, architecture, design docs (including Cognitive Atlas v2 spec) |
 
-See [docs/project-overview/project-file-map.md](docs/project-overview/project-file-map.md) for the full file map.
+See [docs/project-overview/project-file-map.md](docs/project-overview/project-file-map.md) for the full file map.  
+See [docs/requirements-planning/cognitive-atlas-v2-system-spec.md](docs/requirements-planning/cognitive-atlas-v2-system-spec.md) for the v2 ontology and strict classification gate.
 
 ---
 
@@ -129,6 +133,6 @@ See [docs/project-overview/project-file-map.md](docs/project-overview/project-fi
 
 ## 👤 Authors and acknowledgments
 
-- **NESNILNEHC** – ModelSpace, cognitive model 3D visualization
+- **NESNILNEHC** – Cognitive Atlas
 - Three.js (vendored) – 3D rendering
 - See `docs/` for classification standards and design decisions

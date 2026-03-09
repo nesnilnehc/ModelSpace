@@ -28,7 +28,41 @@ export function createDetailOrchestrator(options) {
     }));
   }
 
+  function normalizeRelationType(type) {
+    switch (type) {
+      case "pair_with":
+        return "pair_with";
+      case "contrast_with":
+        return "contrast_with";
+      default:
+        return "related";
+    }
+  }
+
+  function formatRelationLabel(type, t) {
+    if (type === "pair_with") return t.relatedPairWith;
+    if (type === "contrast_with") return t.relatedContrastWith;
+    return t.relatedRelated;
+  }
+
+  function buildGraphRelationGroups(model, t) {
+    const relationMap = new Map();
+    for (const edge of model.relations || []) {
+      const target = modelData.find((candidate) => candidate.name === edge.target);
+      if (!target) continue;
+      const groupType = normalizeRelationType(edge.type);
+      if (!relationMap.has(groupType)) relationMap.set(groupType, []);
+      relationMap.get(groupType).push(target);
+    }
+
+    return [...relationMap.entries()].map(([type, models]) => ({
+      label: formatRelationLabel(type, t),
+      items: toRelatedItems(models)
+    }));
+  }
+
   function buildRelatedModelGroups(model, selectedCellKey, t) {
+    const graphRelationGroups = buildGraphRelationGroups(model, t);
     const sameCellModels = modelData.filter((candidate) =>
       candidate.name !== model.name
       && `${getXBucketValue(candidate.x)}|${candidate.y}|${candidate.z}` === selectedCellKey);
@@ -43,6 +77,7 @@ export function createDetailOrchestrator(options) {
     const nearestModels = viewUiState.neighborMeshes.map((mesh) => mesh.userData.model);
 
     return [
+      ...graphRelationGroups,
       { label: t.relatedSameCell, items: toRelatedItems(sameCellModels) },
       { label: t.relatedSameCategory, items: toRelatedItems(sameCategoryModels) },
       { label: t.relatedNearest, items: toRelatedItems(nearestModels, 4) }
@@ -108,6 +143,7 @@ export function createDetailOrchestrator(options) {
     const tags = viewUiState.uiLanguage === "en" ? (model.tagsEn ?? model.tags) : model.tags;
     const evaluation = model.evaluation || null;
     const referencePayload = buildModelReferencePayload(model, t);
+    const atlasV2 = model.atlasV2 || null;
     const evidencePackKey = evaluation?.evidencePack || "-";
     const evidenceSources = windowRef?.MODEL_EVIDENCE_PACKS?.[evidencePackKey] || "-";
     const stageA = evaluation?.stageA || "";
@@ -128,6 +164,7 @@ export function createDetailOrchestrator(options) {
 
     const rawOverviewRows = [
       { label: t.detailCategory, value: categoryText },
+      { label: t.detailObjectType, value: atlasV2?.objectType || t.detailNone },
       { label: t.detailCell, value: spaceCell },
       { label: t.detailNeighbor, value: neighborText },
       { label: t.detailX, value: xAxisText },
@@ -154,6 +191,14 @@ export function createDetailOrchestrator(options) {
     appendJudgementRow(t.judgementAxisX, `${xAxisText} · ${t.axisRationaleX[xKey]}`, true);
     appendJudgementRow(t.judgementAxisY, `${yAxisText} · ${t.axisRationaleY[String(model.y)]}`, true);
     appendJudgementRow(t.judgementAxisZ, `${zAxisText} · ${t.axisRationaleZ[String(model.z)]}`, true);
+    appendJudgementRow(t.judgementObjectType, atlasV2?.objectType || "-", true);
+    appendJudgementRow(
+      t.judgementV2Coordinates,
+      atlasV2?.coordinates?.primary
+        ? `(${atlasV2.coordinates.primary.x}, ${atlasV2.coordinates.primary.y}, ${atlasV2.coordinates.primary.z})`
+        : "-",
+      true
+    );
     appendJudgementRow(t.judgementGates, evaluation?.gates || "-");
     appendJudgementRow(t.judgementReason, evaluation?.reason || "-");
 
