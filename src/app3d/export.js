@@ -308,9 +308,10 @@ export function createExportService({
     MECE: "docs/assets/illustrations/mece.png"
   };
 
-  /** 模型名 → 竖卡补充信息：参考来源、应用场景示例 */
+  /** 模型名 → 竖卡补充信息：概念一句话、参考来源、应用场景示例 */
   const DOUYIN_CARD_EXTRA = {
     MECE: {
+      summaryZh: "拆解问题时不重叠、不遗漏，每一层分类相互独立且完全穷尽",
       source: "Barbara Minto《金字塔原理》；McKinsey 结构化思维",
       examples: "市场细分、问题拆解、报告结构、会议议题分类"
     }
@@ -362,12 +363,18 @@ export function createExportService({
     ctx.fillRect(0, 0, width, height);
 
     const maxW = width - padding * 2;
-    const defText = (model.descriptionEn || model.knowledgeObject?.summary || model.aliasZh || model.name) || "—";
+    const extra = DOUYIN_CARD_EXTRA[model.name];
+    const defText = (extra?.summaryZh || model.descriptionEn || model.knowledgeObject?.summary || model.aliasZh || model.name) || "—";
     const whenText = (model.knowledgeObject?.whenToUse || model.purpose || "").trim();
-    const showWhen = whenText && whenText !== defText;
     const categoryLabels = { Expression: "表达", Structure: "结构", Diagnosis: "诊断", Strategy: "战略", Meta: "元认知" };
-    const scopeText = showWhen ? whenText : (model.category && categoryLabels[model.category]) ? `适用：${categoryLabels[model.category]}领域` : null;
+    // 应用示例：优先 extra.examples；whenText 仅当非 definition 时使用
+    const isWhenTextDef = whenText && (whenText === model.descriptionEn || whenText === defText);
+    let scopeText = null;
+    if (extra?.examples) scopeText = extra.examples;
+    else if (whenText && !isWhenTextDef) scopeText = whenText;
+    else if (model.category && categoryLabels[model.category]) scopeText = `适用：${categoryLabels[model.category]}领域`;
     const showScope = !!scopeText;
+    const sourceText = extra?.source || null;
 
     const defFont = "36px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif";
 
@@ -378,14 +385,10 @@ export function createExportService({
     ctx.font = defFont;
     const defH = measureWrappedHeight(ctx, defText, maxW, 44);
     ctx.font = "30px -apple-system, BlinkMacSystemFont, sans-serif";
-    const scopeH = showScope ? 36 + measureWrappedHeight(ctx, scopeText, maxW, 38) + 28 : 0;
-    const extra = DOUYIN_CARD_EXTRA[model.name];
-    const sourceText = extra?.source || null;
-    const examplesText = extra?.examples || null;
+    const scopeH = showScope ? 36 + measureWrappedHeight(ctx, scopeText, maxW, 38) + 24 : 0;
     ctx.font = "24px -apple-system, BlinkMacSystemFont, sans-serif";
-    const sourceH = sourceText ? 30 + measureWrappedHeight(ctx, sourceText, maxW, 30) + 16 : 0;
-    const examplesH = examplesText ? 30 + measureWrappedHeight(ctx, examplesText, maxW, 30) + 16 : 0;
-    const extraH = sourceH + examplesH;
+    const sourceH = sourceText ? 28 + measureWrappedHeight(ctx, sourceText, maxW, 28) + 12 : 0;
+    const extraH = scopeH + sourceH;
     const ctaH = 80;
     const illustrationH = illustrationImg ? 240 + 24 : 0; // 插图高 240px + 下方间距
     const contentH = 72 + nameH + 24 + aliasH + 48 + illustrationH + 36 + defH + 24 + scopeH + extraH + 40 + ctaH;
@@ -423,34 +426,22 @@ export function createExportService({
     if (showScope) {
       ctx.fillStyle = "rgba(170, 186, 204, 0.85)";
       ctx.font = "26px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif";
-      ctx.fillText(showWhen ? "应用场景" : "适用领域", width / 2, y);
+      ctx.fillText(extra?.examples ? "应用示例" : "适用领域", width / 2, y);
       y += 36;
       ctx.fillStyle = "rgba(200, 210, 230, 0.9)";
       ctx.font = "30px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif";
       wrapTextByWords(ctx, scopeText, width / 2, y, maxW, 38);
-      y += measureWrappedHeight(ctx, scopeText, maxW, 38) + 28;
+      y += measureWrappedHeight(ctx, scopeText, maxW, 38) + 24;
     }
 
-    if (sourceText || examplesText) {
-      if (sourceText) {
-        ctx.fillStyle = "rgba(150, 165, 190, 0.75)";
-        ctx.font = "24px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif";
-        ctx.fillText("参考", width / 2, y);
-        y += 30;
-        ctx.fillStyle = "rgba(170, 186, 204, 0.85)";
-        wrapTextByWords(ctx, sourceText, width / 2, y, maxW, 30);
-        y += measureWrappedHeight(ctx, sourceText, maxW, 30) + 16;
-      }
-      if (examplesText) {
-        ctx.fillStyle = "rgba(150, 165, 190, 0.75)";
-        ctx.font = "24px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif";
-        ctx.fillText("示例", width / 2, y);
-        y += 30;
-        ctx.fillStyle = "rgba(170, 186, 204, 0.85)";
-        wrapTextByWords(ctx, examplesText, width / 2, y, maxW, 30);
-        y += measureWrappedHeight(ctx, examplesText, maxW, 30) + 16;
-      }
-      y += 8;
+    if (sourceText) {
+      ctx.fillStyle = "rgba(130, 150, 180, 0.7)";
+      ctx.font = "22px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif";
+      ctx.fillText("参考", width / 2, y);
+      y += 28;
+      ctx.fillStyle = "rgba(150, 170, 195, 0.8)";
+      wrapTextByWords(ctx, sourceText, width / 2, y, maxW, 28);
+      y += measureWrappedHeight(ctx, sourceText, maxW, 28) + 12;
     }
 
     y += 24;
