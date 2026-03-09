@@ -68,7 +68,7 @@
 | 优先级 | 方向 | 范围 | rationale |
 |--------|------|------|------------|
 | **1 todo** | 架构演进 | domain/model-data → core/state → core/scene → ui/panels | [Roadmap](../designs/2026-03-05-iteration-roadmap.md)：先治理工程结构再叠加功能；[Phase3 规划](../designs/2026-03-06-phase3-architecture-evolution.md) 推荐 domain 先行、与 M5 数据治理对齐 |
-| 2 optional | Phase 3 分发能力深化 | 分享 URL 优化、局部截图、主题海报 | 架构稳定后再推进 |
+| 2 todo | Phase 3 可传播认知资产 | 抖音竖卡、脚本模板、落地页 URL；体系化学习路径与手册导出 | [2026-03-09 落地方案](project-board/backlog/) |
 | 3 optional | 3D / 详情改版 | 可见性、信息架构优化 | Proposed，择机落地 |
 
 首项建议：`domain/model-data` 抽离（与 M5 数据治理强相关，抽离后便于测试与扩展）。
@@ -86,11 +86,17 @@
 
 ## 可选 / 后续（Optional）
 
-### Phase 3：分发能力深化（方案 C）
+### Phase 3：可传播认知资产 + 体系化学习（2026-03-09 更新）
 
 - [x] 分享能力增强（短格式 URL、复制分享链接、分享最佳实践文档） — 已实现
-- [x] 局部截图（当前视口模式） — 已实现：视觉图层「导出方式」可选全认知空间 / 当前视口
-- 局部截图（cell 裁剪）、主题海报模板
+- [x] 局部截图（当前视口模式） — 已实现
+- [ ] **G 落地页 URL 规范** — [2026-03-09-model-landing-page-url-spec](project-board/backlog/2026-03-09-model-landing-page-url-spec.md)
+- [ ] **D 抖音竖卡** — [2026-03-09-douyin-card-export](project-board/backlog/2026-03-09-douyin-card-export.md)
+- [ ] **E 创作者脚本模板** — [2026-03-09-creator-script-template-export](project-board/backlog/2026-03-09-creator-script-template-export.md)
+- [ ] **学习路径与练习设计** — [2026-03-09-learning-path-practice-design](project-board/backlog/2026-03-09-learning-path-practice-design.md)
+- [ ] **学习手册 Markdown 导出** — [2026-03-09-learning-handbook-markdown-export](project-board/backlog/2026-03-09-learning-handbook-markdown-export.md)
+- 局部截图（cell 裁剪）、主题海报模板 — 降级，按需求择机
+- [x] 更新 Phase 3 设计：可传播认知资产 — 已纳入 [Phase 3 规划](../designs/2026-03-06-phase3-architecture-evolution.md)
 
 ### 架构演进（已提升为 todo）
 

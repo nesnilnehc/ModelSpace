@@ -61,10 +61,12 @@
 | `docs/project-overview/project-file-map.md` | 当前文档：项目逐文件职责清单。 |
 | `docs/project-overview/goals.md` | 项目目标：核心、战略、数据治理与非目标。 |
 | `docs/process-management/backlog.md` | 从 roadmap 抽取的待办清单；支持 traceability 与 execution-alignment。 |
+| `docs/process-management/project-board/backlog/` | 结构化工作项（requirement/issue）；capture-work-items 输出目录。 |
 | `docs/changelog/model-library-changelog.md` | 模型库变更日志；按模型粒度记录新增/修改/删除。 |
 | `docs/requirements-planning/model-classification-standard.md` | legacy 准入与分类标准，兼容旧 3D 版本说明。 |
 | `docs/requirements-planning/cognitive-atlas-v2-system-spec.md` | Cognitive Atlas v2 主规范：名称、坐标、类型系统、关系与门禁。 |
 | `docs/requirements-planning/20260304-model-admission-classification.md` | 2026-03-04 批次模型准入与三维分类结果总表。 |
+| `docs/requirements-planning/spreadable-cognitive-assets-requirements.md` | 可传播认知资产（抖音竖卡、脚本、落地页）与体系化学习需求。 |
 | `docs/designs/2026-03-05-iteration-roadmap.md` | 后续迭代路线设计草案（A/B/C 路线、阶段目标、验收标准）。 |
 | `docs/designs/2026-03-06-phase3-architecture-evolution.md` | Phase 3 分发深化 & 架构演进规划（可选方向与优先级）。 |
 | `docs/architecture/README.md` | Architecture 文档索引；M1–M5 里程碑交付说明与追溯。 |
@@ -83,7 +85,9 @@
 | `docs/guides/share-url-best-practices.md` | 分享链接最佳实践：URL 参数说明、短格式、嵌入建议。 |
 | `docs/architecture/promo-export-flow.md` | README 推广图导出与更新流程。 |
 | `docs/calibration/2026-03-06-cognitive-loop.md` | 项目认知循环报告；治理周期诊断与推荐任务。 |
+| `docs/calibration/2026-03-09-cognitive-loop.md` | 2026-03-09 scope-change 认知循环报告；落地方案驱动治理更新。 |
 | `docs/calibration/2026-03-06-repair-loop-report.md` | 修复循环报告；自动化测试与缺陷修复记录。 |
+| `docs/calibration/2026-03-09-repair-loop-report.md` | 2026-03-09 修复循环报告；治理变更后 CI 全绿。 |
 
 ## 已清理的临时截图（2026-03-04）
 
