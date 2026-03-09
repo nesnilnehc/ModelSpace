@@ -204,7 +204,18 @@ async function run() {
     await embedPage.close();
     mark("embed-mode");
 
-    assert.ok(checks.length >= 10, "Expected at least 10 regression checks");
+    const landingPage = await browser.newPage({ viewport: { width: 1600, height: 900 } });
+    await landingPage.goto(`${baseUrl}/cognitive-model-3d.html?model=MECE`, { waitUntil: "networkidle", timeout: 30000 });
+    await landingPage.waitForFunction(() => {
+      const title = document.querySelector("#modelContent .model-name")?.textContent?.trim() || "";
+      return title.includes("MECE");
+    }, { timeout: 10000 });
+    const isFocusMode = await landingPage.evaluate(() => window.__viewUiState?.visibilityMode === "focus" || document.querySelector("#modelContent .model-name"));
+    assert.ok(isFocusMode, "Expected ?model=MECE to enter focus mode on MECE");
+    await landingPage.close();
+    mark("model-landing-page");
+
+    assert.ok(checks.length >= 11, "Expected at least 11 regression checks");
 
     console.log(`Smoke E2E passed (${checks.length} checks).`);
   } finally {

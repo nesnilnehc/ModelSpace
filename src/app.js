@@ -260,6 +260,13 @@ if (isSimpleMode) {
 
 applyUILanguage();
 urlStateController.applyUrlState(initialUrlState);
+
+if (initialUrlState.landingModel && modelMeshByName.has(initialUrlState.landingModel)) {
+  const mesh = modelMeshByName.get(initialUrlState.landingModel);
+  selectNode(mesh);
+  urlStateController.syncUrlState();
+}
+
 rebuildLinks();
 
 bindAppInteractionEvents({

@@ -15,6 +15,14 @@
 
 ## 2. URL 参数说明
 
+### 模型落地页（单模型聚焦）
+
+| 参数 | 长格式 | 含义 | 示例 |
+|------|--------|------|------|
+| `mo` | `model` | 模型落地页直达 | `mo=MECE` |
+
+*说明：当 URL 包含 `model` 或 `mo` 时，系统将直接聚焦到该模型，并展开详情面板（包括定义、坐标、关系、参考资料）。此格式适合作为短视频 CTA、外部文章引用的稳定入口。*
+
 ### 短格式（分享推荐）
 
 | 参数 | 长格式 | 含义 | 示例 |
@@ -69,4 +77,10 @@ https://example.com/cognitive-model-3d.html?l=en&m=MECE,OKR
 
 # 单元聚焦 + 嵌入模式
 https://example.com/embed.html?simple=1&embed=1&cells=0|3|2
+
+# 单模型落地页直达
+https://example.com/cognitive-model-3d.html?model=MECE
+
+# 单模型落地页直达（嵌入模式，英文）
+https://example.com/embed.html?simple=1&embed=1&model=MECE&l=en
 ```

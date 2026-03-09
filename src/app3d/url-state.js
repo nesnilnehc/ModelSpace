@@ -12,10 +12,14 @@ function getParam(params, fullKey, shortKey) {
 
 export function parseUrlStateFromQuery(search = "") {
   const params = new URLSearchParams(search || "");
+  const modelParam = getParam(params, "model", "mo");
+  const modelsParam = getParam(params, "models", "m");
+
   return {
     lang: getParam(params, "lang", "l") || "",
     view: getParam(params, "view", "v") || "",
-    models: parseList(getParam(params, "models", "m"), ","),
+    models: parseList(modelsParam, ","),
+    landingModel: modelParam ? modelParam.trim() : "",
     cells: parseList(getParam(params, "cells", "c"), ";"),
     keyword: params.get("q") || "",
     cellKeyword: params.get("cq") || "",
@@ -137,6 +141,10 @@ export function createUrlStateController(options) {
       params.set("models", [...filterSelectionState.selectedModelNames].sort().join(","));
     }
 
+    if (viewUiState.selectedMesh) {
+      params.set("model", viewUiState.selectedMesh.userData.model.name);
+    }
+
     if (filterSelectionState.allCellKeys.length > 0
       && filterSelectionState.selectedCellKeys.size > 0
       && filterSelectionState.selectedCellKeys.size < filterSelectionState.allCellKeys.length) {
@@ -167,6 +175,9 @@ export function createUrlStateController(options) {
     if (filterSelectionState.cellKeyword) set("cq", "cq", filterSelectionState.cellKeyword);
     if (filterSelectionState.selectedModelNames.size > 0 && filterSelectionState.selectedModelNames.size < modelData.length) {
       set("models", "m", [...filterSelectionState.selectedModelNames].sort().join(","));
+    }
+    if (viewUiState.selectedMesh) {
+      set("model", "mo", viewUiState.selectedMesh.userData.model.name);
     }
     if (filterSelectionState.allCellKeys.length > 0
       && filterSelectionState.selectedCellKeys.size > 0
