@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { MODEL_ILLUSTRATION_PATHS } from "../../data/illustration-paths.generated.js";
+import { AXIS_TEXT_BY_LANG, UI_TEXT } from "./i18n.js";
 
 function projectBoxToScreenRect(box, camera, renderer, margin) {
   const corners = [
@@ -297,7 +298,28 @@ export function createExportService({
   /** 模型名 → 插图路径（相对项目根，用于竖卡）。由 scripts/generate-illustrations.mjs 生成 */
   const ILLUSTRATION_PATHS = MODEL_ILLUSTRATION_PATHS;
 
-  /** 模型名 → 竖卡补充信息：概念一句话、参考来源、应用场景示例 */
+  /** v2 objectType → 竖卡短标签（仅 fallback，优先用 knowledgeObject） */
+  const OBJECT_TYPE_LABELS = {
+    zh: { Theory: "理论", Principle: "原则", Framework: "框架", Model: "模型", Method: "方法", Pattern: "模式", Heuristic: "启发式", Tool: "工具", Metric: "指标", System: "系统" },
+    en: { Theory: "Theory", Principle: "Principle", Framework: "Framework", Model: "Model", Method: "Method", Pattern: "Pattern", Heuristic: "Heuristic", Tool: "Tool", Metric: "Metric", System: "System" }
+  };
+
+  /** 从坐标 (x,y,z) 生成简短坐标提示文案，如 "诊断 · 结构层 · 团队" */
+  function formatCoordinateHint(x, y, z, lang) {
+    const axes = AXIS_TEXT_BY_LANG[lang] || AXIS_TEXT_BY_LANG.zh;
+    const short = (axisObj, v) => (axisObj && axisObj[String(v)] ? axisObj[String(v)].split("\n")[0] : String(v));
+    const xv = Number.isFinite(x) ? x : 3, yv = Number.isFinite(y) ? y : 3, zv = Number.isFinite(z) ? z : 3;
+    return `${short(axes.x, xv)} · ${short(axes.y, yv)} · ${short(axes.z, zv)}`;
+  }
+
+  /** 竖卡截断：保留前 maxLen 字/字符，超出加省略号 */
+  function truncateForCard(text, maxLen = 80) {
+    const s = String(text || "").trim();
+    if (s.length <= maxLen) return s;
+    return s.slice(0, maxLen) + "…";
+  }
+
+  /** 模型名 → 竖卡补充信息（fallback，v2 数据补齐后逐步废弃） */
   const DOUYIN_CARD_EXTRA = {
     MECE: {
       summaryZh: "拆解问题时不重叠、不遗漏，每一层分类相互独立且完全穷尽",
@@ -329,7 +351,7 @@ export function createExportService({
    * 设计原则：第一次输出核心价值，引导指向更多价值
    * 信息层级：名称 → [插图] → 概念 → 应用场景 → [分隔] → 获取更多
    */
-  async function getDouyinCardDataUrl(model) {
+  async function getDouyinCardDataUrl(model, lang = "zh") {
     if (document.fonts && document.fonts.ready) {
       await document.fonts.ready;
     }
@@ -345,7 +367,7 @@ export function createExportService({
 
     const width = 1080;
     const height = 1920;
-    /** 两侧安全边距，避开抖音等平台工具栏遮挡 */
+    /** 两侧安全边距，避开抖音等平台工具栏遮挡；设计约束见 docs/designs/douyin-card-platform-constraints.md */
     const DOUYIN_SAFE_MARGIN_H = 100;
     const paddingVertical = 56;
     const paddingH = DOUYIN_SAFE_MARGIN_H;
@@ -363,40 +385,96 @@ export function createExportService({
     ctx.fillRect(0, 0, width, height);
 
     const maxW = width - 2 * paddingH;
+    const ko = model.knowledgeObject;
+    let mece = typeof window !== "undefined" ? window.MODEL_MECE_EXTENSIONS?.[model.name] : null;
+    if (!mece && model.name === "Fishbone Diagram") {
+      mece = { problemTarget: "面对一个复杂缺陷，问题来源可能性众多，大家七嘴八舌无法系统化梳理各类潜在诱因。", whenToUse: "质量管理、工艺缺陷分析、团队头脑风暴找原因，以及在复杂场景中结构化呈现所有潜在因果假设。", examples: "分析「某款蛋糕烘焙常出现塌陷」：鱼头定为「蛋糕塌陷」。主骨【材料】(面粉筋度不对、蛋白不新鲜)；【工艺/法】(打发时间不够、烘烤温度不准)；【人员】(新手未看说明书)；【环境】(厨房湿度太高)。随后通过实验排查发现主要是「烘烤温度传感器偏移(机)」。", rules: ["确定鱼头（Effect）：在最右侧画出明确的问题或结果症状。", "搭建主鱼骨（Category）：画出指向鱼头的主脊柱，并引出不同维度的骨架（制造业多用 5M1E：人、机、料、法、环、测；服务业用 4P：人、政策、流程、场地）。"] };
+    }
     const extra = DOUYIN_CARD_EXTRA[model.name];
-    const defText = (extra?.summaryZh || model.descriptionEn || model.knowledgeObject?.summary || model.aliasZh || model.name) || "—";
-    const whenText = (model.knowledgeObject?.whenToUse || model.purpose || "").trim();
-    const categoryLabels = { Expression: "表达", Structure: "结构", Diagnosis: "诊断", Strategy: "战略", Meta: "元认知" };
-    // 应用示例：优先 extra.examples；whenText 仅当非 definition 时使用
-    const isWhenTextDef = whenText && (whenText === model.descriptionEn || whenText === defText);
+
+    // 竖卡强制优先 mece（MODEL_MECE_EXTENSIONS 或内联兜底），确保展示 problemTarget/examples/rules
+    const pt = mece?.problemTarget || ko?.problemTarget;
+    const wtu = mece?.whenToUse || ko?.whenToUse;
+    const def = ko?.definition || model.descriptionEn;
+    const ex = lang === "en" ? (mece?.examplesEn || mece?.examples || ko?.examplesEn || ko?.examples) : (mece?.examples || mece?.examplesEn || ko?.examples || ko?.examplesEn);
+    const rls = lang === "en" ? (mece?.rulesEn || mece?.rules || ko?.rulesEn || ko?.rules) : (mece?.rules || mece?.rulesEn || ko?.rules || ko?.rulesEn);
+    const ptEn = ko?.problemTargetEn || mece?.problemTargetEn;
+    const wtuEn = ko?.whenToUseEn || mece?.whenToUseEn;
+
+    // 核心价值「一句话」：优先 problemTarget（解决什么）→ whenToUse（何时用）→ definition（学术定义）。
+    let defText = null;
+    if (lang === "en") {
+      defText = ptEn || wtuEn || def || extra?.summaryZh || model.descriptionEn;
+    } else {
+      defText = pt || wtu || def || extra?.summaryZh || model.descriptionEn;
+    }
+    if (!defText || defText === model.aliasZh || defText === model.name) {
+      defText = def || model.descriptionEn || "—";
+    }
+    const whenText = (lang === "en" ? (wtuEn || ptEn || model.descriptionEn || "") : (wtu || pt || model.description || "")).trim();
+    const isWhenRedundant = whenText && (whenText === model.descriptionEn || whenText === defText || whenText === model.aliasZh || whenText === model.name);
+
+    // 应用示例：不截断，通过布局展示完整内容
     let scopeText = null;
-    if (extra?.examples) scopeText = extra.examples;
-    else if (whenText && !isWhenTextDef) scopeText = whenText;
-    else if (model.category && categoryLabels[model.category]) scopeText = `适用：${categoryLabels[model.category]}领域`;
+    if (ex) scopeText = String(ex).trim();
+    else if (whenText && !isWhenRedundant) scopeText = whenText;
+    else if (extra?.examples) scopeText = String(extra.examples).trim();
+    else if (model.category) {
+      const categoryLabels = (UI_TEXT[lang] || UI_TEXT.zh)?.categoryLabels ?? {};
+      if (categoryLabels[model.category]) scopeText = lang === "zh" ? `最常用于${categoryLabels[model.category]}相关场景` : `Common in ${categoryLabels[model.category]}`;
+    }
     const showScope = !!scopeText;
-    const sourceText = extra?.source || null;
-    const rulesArr = Array.isArray(extra?.rules) ? extra.rules : null;
-    const rulesText = rulesArr ? rulesArr.map((r, i) => `${i + 1}. ${r}`).join("  ") : null;
+
+    // 参考：v2 origin → MODEL_REFERENCE_RESOURCES → extra.source (fallback)
+    let sourceText = ko?.origin || null;
+    if (!sourceText) {
+      const resources = window.MODEL_REFERENCE_RESOURCES?.[model.name];
+      if (resources) {
+        const authors = (resources.authors || []).map(a => typeof a === "string" ? a : a.name).join("、");
+        const books = (resources.books || []).map(b => `《${typeof b === "string" ? b : (b.title || b.name)}》`).join("、");
+        if (authors && books) sourceText = `${authors} ${books}`;
+        else if (authors) sourceText = authors;
+        else if (books) sourceText = books;
+      }
+    }
+    if (!sourceText && extra?.source) sourceText = extra.source;
+
+    // 规则：不截断，完整展示，通过布局适配
+    const rawRules = rls || extra?.rules;
+    let rulesArr = Array.isArray(rawRules) && rawRules.length > 0 ? rawRules : null;
+
+    // 坐标提示（REQ-D-2）
+    const primary = ko?.coordinates?.primary || { x: model.x, y: model.y, z: model.z };
+    const coordsText = formatCoordinateHint(primary.x, primary.y, primary.z, lang);
+
+    // 类型标签 objectType
+    const objectType = ko?.objectType || model.objectType;
+    const objectTypeLabel = objectType ? (OBJECT_TYPE_LABELS[lang] || OBJECT_TYPE_LABELS.zh)[objectType] : null;
+    const showObjectType = !!objectTypeLabel;
+
+    const rulesText = rulesArr ? rulesArr.map((r, i) => `${i + 1}. ${String(r).trim()}`).join("\n") : null;
     const showRules = !!rulesText;
 
-    const defFont = "36px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif";
+    const defFont = "32px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif";
 
     ctx.font = "bold 52px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif";
     const nameH = measureWrappedHeight(ctx, model.name, maxW, 62);
     ctx.font = "30px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif";
     const aliasH = measureWrappedHeight(ctx, model.aliasZh || "", maxW, 40);
+    const objectTypeH = showObjectType ? 28 : 0;
     ctx.font = defFont;
-    const defH = measureWrappedHeight(ctx, defText, maxW, 44);
-    ctx.font = "30px -apple-system, BlinkMacSystemFont, sans-serif";
-    const scopeH = showScope ? 36 + measureWrappedHeight(ctx, scopeText, maxW, 38) + 24 : 0;
+    const defH = measureWrappedHeight(ctx, defText, maxW, 40);
+    const coordsH = 0;
     ctx.font = "24px -apple-system, BlinkMacSystemFont, sans-serif";
-    const sourceH = sourceText ? 28 + measureWrappedHeight(ctx, sourceText, maxW, 28) + 12 : 0;
+    const scopeH = showScope ? 28 + measureWrappedHeight(ctx, scopeText, maxW, 30) + 28 : 0;
+    ctx.font = "22px -apple-system, BlinkMacSystemFont, sans-serif";
+    const sourceH = sourceText ? 28 + measureWrappedHeight(ctx, sourceText, maxW, 28) + 20 : 0;
     ctx.font = "24px -apple-system, BlinkMacSystemFont, sans-serif";
-    const rulesH = showRules ? 28 + measureWrappedHeight(ctx, rulesText, maxW, 26) + 12 : 0;
+    const rulesH = showRules ? 26 + measureWrappedHeight(ctx, rulesText, maxW, 24) + 28 : 0;
     const extraH = scopeH + sourceH + rulesH;
-    const ctaH = 80;
+    const ctaH = 100;
     const illustrationBoxW = maxW;
-    const illustrationBoxH = 560;
+    const illustrationBoxH = 580;
     let illustrationDrawW = 0;
     let illustrationDrawH = 0;
     if (illustrationImg) {
@@ -408,11 +486,18 @@ export function createExportService({
       illustrationDrawH = illustrationImg.height * illScale;
     }
     const illustrationH = illustrationImg ? illustrationDrawH + 36 : 0;
-    const contentH = 72 + nameH + 24 + aliasH + 48 + illustrationH + 36 + defH + 24 + extraH + 40 + ctaH;
-    const blockTop = Math.max(paddingVertical, (height - contentH) / 2);
+    const afterAliasH = aliasH + (showObjectType ? objectTypeH + 12 : 0);
+    const contentH = 72 + nameH + 24 + afterAliasH + 48 + illustrationH + 28 + defH + 28 + extraH + 40 + ctaH;
+    const blockTop = paddingVertical;
 
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
+
+    ctx.fillStyle = "rgba(0, 240, 255, 0.55)";
+    ctx.font = "20px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText(coordsText, paddingH, paddingVertical + 12);
+    ctx.textAlign = "center";
 
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 52px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif";
@@ -422,52 +507,74 @@ export function createExportService({
     ctx.font = "30px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif";
     wrapText(ctx, model.aliasZh || "", width / 2, blockTop + 72 + nameH + 24, maxW, 40);
 
+    if (showObjectType) {
+      let objY = blockTop + 72 + nameH + 24 + aliasH + 12;
+      ctx.fillStyle = "rgba(0, 240, 255, 0.6)";
+      ctx.font = "22px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif";
+      ctx.fillText(objectTypeLabel, width / 2, objY);
+    }
+
     if (illustrationImg) {
       const illX = (width - illustrationDrawW) / 2;
-      const illY = blockTop + 72 + nameH + 24 + aliasH + 48;
+      const illY = blockTop + 72 + nameH + 24 + afterAliasH + 48;
       ctx.drawImage(illustrationImg, illX, illY, illustrationDrawW, illustrationDrawH);
     }
 
-    let y = blockTop + 72 + nameH + 24 + aliasH + 48 + illustrationH;
-    ctx.fillStyle = "rgba(170, 186, 204, 0.85)";
-    ctx.font = "26px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif";
-    ctx.fillText("概念", width / 2, y);
-    y += 36;
+    let y = blockTop + 72 + nameH + 24 + afterAliasH + 48 + illustrationH;
+    ctx.textAlign = "left";
     ctx.fillStyle = "rgba(232, 238, 244, 0.95)";
     ctx.font = defFont;
-    wrapTextByWords(ctx, defText, width / 2, y, maxW, 44);
-    y += defH + 24;
+    wrapTextByWordsLeft(ctx, defText, paddingH, y, maxW, 40);
+    y += defH + 28;
 
     if (showRules) {
+      ctx.strokeStyle = "rgba(100, 140, 180, 0.25)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(paddingH, y - 12);
+      ctx.lineTo(width - paddingH, y - 12);
+      ctx.stroke();
       ctx.fillStyle = "rgba(130, 150, 180, 0.7)";
-      ctx.font = "22px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif";
-      ctx.fillText("四条规则", width / 2, y);
-      y += 28;
+      ctx.font = "20px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif";
+      ctx.fillText(lang === "en" ? "Rules" : "规则与说明", paddingH, y);
+      y += 26;
       ctx.fillStyle = "rgba(150, 170, 195, 0.85)";
-      ctx.font = "24px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif";
-      wrapTextByWords(ctx, rulesText, width / 2, y, maxW, 26);
-      y += measureWrappedHeight(ctx, rulesText, maxW, 26) + 12;
+      ctx.font = "22px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif";
+      wrapTextByWordsLeft(ctx, rulesText, paddingH, y, maxW, 24);
+      y += measureWrappedHeight(ctx, rulesText, maxW, 24) + 28;
     }
 
     if (showScope) {
+      ctx.strokeStyle = "rgba(100, 140, 180, 0.25)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(paddingH, y - 12);
+      ctx.lineTo(width - paddingH, y - 12);
+      ctx.stroke();
       ctx.fillStyle = "rgba(170, 186, 204, 0.85)";
-      ctx.font = "26px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif";
-      ctx.fillText(extra?.examples ? "应用示例" : "适用领域", width / 2, y);
-      y += 36;
+      ctx.font = "20px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif";
+      ctx.fillText(lang === "en" ? "Examples" : (scopeText === whenText ? "适用领域" : "应用示例"), paddingH, y);
+      y += 28;
       ctx.fillStyle = "rgba(200, 210, 230, 0.9)";
-      ctx.font = "30px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif";
-      wrapTextByWords(ctx, scopeText, width / 2, y, maxW, 38);
-      y += measureWrappedHeight(ctx, scopeText, maxW, 38) + 24;
+      ctx.font = "24px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif";
+      wrapTextByWordsLeft(ctx, scopeText, paddingH, y, maxW, 30);
+      y += measureWrappedHeight(ctx, scopeText, maxW, 30) + 28;
     }
 
     if (sourceText) {
+      ctx.strokeStyle = "rgba(100, 140, 180, 0.25)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(paddingH, y - 12);
+      ctx.lineTo(width - paddingH, y - 12);
+      ctx.stroke();
       ctx.fillStyle = "rgba(130, 150, 180, 0.7)";
       ctx.font = "22px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif";
-      ctx.fillText("参考", width / 2, y);
+      ctx.fillText(lang === "en" ? "Reference" : "参考", paddingH, y);
       y += 28;
       ctx.fillStyle = "rgba(150, 170, 195, 0.8)";
-      wrapTextByWords(ctx, sourceText, width / 2, y, maxW, 28);
-      y += measureWrappedHeight(ctx, sourceText, maxW, 28) + 12;
+      wrapTextByWordsLeft(ctx, sourceText, paddingH, y, maxW, 28);
+      y += measureWrappedHeight(ctx, sourceText, maxW, 28) + 20;
     }
 
     y += 24;
@@ -479,13 +586,18 @@ export function createExportService({
     ctx.stroke();
     y += 40;
 
+    ctx.textAlign = "center";
     ctx.fillStyle = "rgba(0, 240, 255, 0.7)";
     ctx.font = "26px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif";
-    ctx.fillText("获取更多价值", width / 2, y);
-    y += 40;
+    ctx.fillText(lang === "en" ? "Dive Deeper" : "获取更多价值", width / 2, y);
+    y += 36;
     ctx.fillStyle = "#00f0ff";
-    ctx.font = "bold 30px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif";
-    ctx.fillText("关联模型 · 学习路径 · 练习 → 评论置顶", width / 2, y);
+    ctx.font = "bold 28px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif";
+    ctx.fillText(lang === "en" ? "Connections | Paths | Practice" : "关联模型 | 学习路径 | 练习", width / 2, y);
+    y += 32;
+    ctx.fillStyle = "rgba(0, 240, 255, 0.85)";
+    ctx.font = "22px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif";
+    ctx.fillText(lang === "en" ? "Details → See comments" : "详情见评论置顶", width / 2, y);
 
     // 品牌水印（短期：文字标识；长期可替换为 Logo 图）
     ctx.textAlign = "right";
@@ -499,8 +611,8 @@ export function createExportService({
     return canvas.toDataURL("image/png");
   }
 
-  function exportDouyinCard(model, fileName) {
-    getDouyinCardDataUrl(model).then((dataUrl) => {
+  function exportDouyinCard(model, fileName, lang = "zh") {
+    getDouyinCardDataUrl(model, lang).then((dataUrl) => {
     const anchor = document.createElement("a");
     anchor.href = dataUrl;
     anchor.download = fileName || `cognitive-atlas-douyin-${model.name}-${new Date().toISOString().slice(0, 10)}.png`;
@@ -534,24 +646,59 @@ function roundRect(ctx, x, y, w, h, r) {
 
 function wrapTextByWords(ctx, text, centerX, y, maxWidth, lineHeight) {
   const s = String(text || "").trim();
-  const tokens = s.includes(" ") ? s.split(/\s+/) : s.split("");
-  const lines = [];
-  let line = "";
-  for (const token of tokens) {
-    const sep = line ? (s.includes(" ") ? " " : "") : "";
-    const test = line + sep + token;
-    const m = ctx.measureText(test);
-    if (m.width > maxWidth && line) {
-      lines.push(line);
-      line = token;
-    } else {
-      line = test;
+  const paragraphs = s.split("\n");
+  let currentY = y;
+  for (const para of paragraphs) {
+    const tokens = para.includes(" ") ? para.split(/\s+/) : para.split("");
+    const lines = [];
+    let line = "";
+    for (const token of tokens) {
+      const sep = line ? (para.includes(" ") ? " " : "") : "";
+      const test = line + sep + token;
+      const m = ctx.measureText(test);
+      if (m.width > maxWidth && line) {
+        lines.push(line);
+        line = token;
+      } else {
+        line = test;
+      }
+    }
+    if (line) lines.push(line);
+    for (const ln of lines) {
+      ctx.fillText(ln, centerX, currentY);
+      currentY += lineHeight;
     }
   }
-  if (line) lines.push(line);
-  for (let i = 0; i < lines.length; i++) {
-    ctx.fillText(lines[i], centerX, y + i * lineHeight);
+}
+
+function wrapTextByWordsLeft(ctx, text, leftX, y, maxWidth, lineHeight) {
+  const prevAlign = ctx.textAlign;
+  ctx.textAlign = "left";
+  const s = String(text || "").trim();
+  const paragraphs = s.split("\n");
+  let currentY = y;
+  for (const para of paragraphs) {
+    const tokens = para.includes(" ") ? para.split(/\s+/) : para.split("");
+    const lines = [];
+    let line = "";
+    for (const token of tokens) {
+      const sep = line ? (para.includes(" ") ? " " : "") : "";
+      const test = line + sep + token;
+      const m = ctx.measureText(test);
+      if (m.width > maxWidth && line) {
+        lines.push(line);
+        line = token;
+      } else {
+        line = test;
+      }
+    }
+    if (line) lines.push(line);
+    for (const ln of lines) {
+      ctx.fillText(ln, leftX, currentY);
+      currentY += lineHeight;
+    }
   }
+  ctx.textAlign = prevAlign;
 }
 
 function wrapText(ctx, text, centerX, y, maxWidth, lineHeight) {
@@ -575,19 +722,25 @@ function wrapText(ctx, text, centerX, y, maxWidth, lineHeight) {
 }
 
 function measureWrappedHeight(ctx, text, maxWidth, lineHeight) {
-  const words = String(text || "").split("");
-  let line = "";
-  let lines = 0;
-  for (const ch of words) {
-    const test = line + ch;
-    const m = ctx.measureText(test);
-    if (m.width > maxWidth && line) {
-      lines++;
-      line = ch;
-    } else {
-      line = test;
+  const s = String(text || "").trim();
+  const paragraphs = s.split("\n");
+  let total = 0;
+  for (const para of paragraphs) {
+    const chars = para.split("");
+    let line = "";
+    let lines = 0;
+    for (const ch of chars) {
+      const test = line + ch;
+      const m = ctx.measureText(test);
+      if (m.width > maxWidth && line) {
+        lines++;
+        line = ch;
+      } else {
+        line = test;
+      }
     }
+    if (line) lines++;
+    total += lines * lineHeight;
   }
-  if (line) lines++;
-  return lines * lineHeight;
+  return total;
 }

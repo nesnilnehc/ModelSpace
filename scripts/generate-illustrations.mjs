@@ -11,6 +11,7 @@ const ILLUSTRATION_PATHS_FILE = path.join(__dirname, "../data/illustration-paths
 if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
 const window = {};
+new Function("window", fs.readFileSync(path.join(__dirname, "../data/model-mece-extensions.js"), "utf8"))(window);
 new Function("window", fs.readFileSync(MODEL_LIB_PATH, "utf8"))(window);
 
 const COLORS = {

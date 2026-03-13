@@ -45,7 +45,10 @@ function createStaticServer(rootDir) {
       }
       const buf = await readFile(targetPath);
       const ext = path.extname(targetPath).toLowerCase();
-      res.writeHead(200, { "Content-Type": MIME_TYPES[ext] || "application/octet-stream" });
+      res.writeHead(200, {
+        "Content-Type": MIME_TYPES[ext] || "application/octet-stream",
+        "Cache-Control": "no-store, no-cache, must-revalidate"
+      });
       res.end(buf);
     } catch (e) {
       res.writeHead(e?.code === "ENOENT" ? 404 : 500).end();
@@ -77,14 +80,7 @@ async function main() {
   try {
     const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
 
-    const downloadPromise = new Promise((resolve, reject) => {
-      page.on("download", (d) => {
-        d.path().then(resolve).catch(reject);
-      });
-      setTimeout(() => reject(new Error("Download timeout 30s")), 30000);
-    });
-
-    await page.goto(`${baseUrl}/cognitive-model-3d.html?model=${encodedModel}`, {
+    await page.goto(`${baseUrl}/cognitive-model-3d.html?model=${encodedModel}&_=${Date.now()}`, {
       waitUntil: "networkidle",
       timeout: 20000
     });
@@ -97,22 +93,23 @@ async function main() {
       { timeout: 10000 }
     );
 
-    await page.click("#dockAdvancedSummary");
-    await page.waitForSelector("#exportDouyinCardBtn", { state: "visible", timeout: 5000 });
+    await page.waitForFunction(
+      () => typeof window.__cognitiveAtlasDouyinExport === "function",
+      { timeout: 5000 }
+    );
 
-    const disabled = await page.getAttribute("#exportDouyinCardBtn", "disabled");
-    if (disabled !== null) {
-      throw new Error(`Export button disabled. Ensure model "${modelName}" is selected.`);
+    const dataUrl = await page.evaluate(async () => {
+      const fn = window.__cognitiveAtlasDouyinExport;
+      if (!fn) return null;
+      return await fn();
+    });
+
+    if (!dataUrl || typeof dataUrl !== "string" || !dataUrl.startsWith("data:image/png")) {
+      throw new Error("Export returned invalid data. Model may not be selected.");
     }
 
-    await page.click("#exportDouyinCardBtn");
-
-    const downloadPath = await downloadPromise;
-    if (!downloadPath) {
-      throw new Error("Download did not trigger");
-    }
-
-    const buf = await readFile(downloadPath);
+    const base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
+    const buf = Buffer.from(base64, "base64");
     if (buf.length < 1000) {
       throw new Error("Exported PNG too small");
     }

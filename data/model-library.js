@@ -1493,7 +1493,8 @@ window.MODEL_COORDINATES_BY_NAME = {
       axisRationale,
       purpose: descriptionEn,
       references: window.MODEL_REFERENCE_RESOURCES?.[name] || null,
-      relations: relationIndex[name] || []
+      relations: relationIndex[name] || [],
+      meceExtension: window.MODEL_MECE_EXTENSIONS?.[name] || null
     };
   });
 })();

@@ -186,7 +186,7 @@ const modelMeshByName = new Map();
 let visibleNodeMeshes = [];
 let queuedPointerEvent = null;
 let pointerFrameQueued = false;
-const { getExportDataUrl, exportCanvasImage, exportPosterImage, exportDouyinCard } = createExportService({
+const exportService = createExportService({
   renderer,
   camera,
   scene,
@@ -198,6 +198,16 @@ const { getExportDataUrl, exportCanvasImage, exportPosterImage, exportDouyinCard
   toWorldZ,
   visualConfig: VISUAL_CONFIG
 });
+const { getExportDataUrl, exportCanvasImage, exportPosterImage, exportDouyinCard } = exportService;
+
+// 供 export-douyin-card.mjs 直接调用，绕过下载与缓存
+if (typeof window !== "undefined") {
+  window.__cognitiveAtlasDouyinExport = () => {
+    const model = viewUiState?.selectedMesh?.userData?.model;
+    if (!model) return null;
+    return exportService.getDouyinCardDataUrl(model, viewUiState?.uiLanguage || "zh");
+  };
+}
 const urlStateController = createUrlStateController({
   windowRef: window,
   cameraViewDirections: CAMERA_VIEW_DIRECTIONS,
@@ -436,7 +446,7 @@ bindAppInteractionEvents({
     onExportDouyinCard: () => {
       const mesh = viewUiState.selectedMesh;
       if (!mesh?.userData?.model) return;
-      exportDouyinCard(mesh.userData.model);
+      exportDouyinCard(mesh.userData.model, undefined, viewUiState.uiLanguage);
     },
     onFullscreenToggle: () => {
       toggleFullscreen();

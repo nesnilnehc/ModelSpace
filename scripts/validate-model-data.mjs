@@ -27,6 +27,7 @@ if (rows.length === 0) {
 const sandbox = { window: {} };
 vm.createContext(sandbox);
 try {
+  vm.runInContext(fs.readFileSync("data/model-mece-extensions.js", "utf8"), sandbox);
   vm.runInContext(content, sandbox);
 } catch (err) {
   console.error("Failed to evaluate data/model-library.js:", err.message);

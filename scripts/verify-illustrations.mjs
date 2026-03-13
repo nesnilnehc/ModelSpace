@@ -12,8 +12,11 @@ const dataPath = join(root, "data/model-library.js");
 
 function loadModelLibrary() {
   const content = fs.readFileSync(dataPath, "utf8");
+  const extPath = join(root, "data/model-mece-extensions.js");
+  const extContent = fs.readFileSync(extPath, "utf8");
   const sandbox = { window: {} };
   vm.createContext(sandbox);
+  vm.runInContext(extContent, sandbox);
   vm.runInContext(content, sandbox);
   return sandbox.window.MODEL_LIBRARY_ROWS || [];
 }

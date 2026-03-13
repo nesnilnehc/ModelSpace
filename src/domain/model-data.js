@@ -149,29 +149,37 @@ function toRuntimeModel(entry, evaluationByName, relationIndexByName, opts = {})
     tags,
     tagsEn,
     knowledgeObject: {
-      id: normalized.id || `ca.${slugify(objectType)}.${slugify(name)}.v1`,
+      // Identity & Ontology
+      id: `ca.${String(atlasV2?.objectType || category).toLowerCase()}.${name.toLowerCase().replace(/\s+/g, '-')}.v1`,
       name,
-      aliases: [aliasZh, ...aliases].filter(Boolean),
-      objectType,
-      summary,
-      problem,
-      whenToUse,
-      whenNotToUse: normalized.whenNotToUse || null,
-      commonMisuse: normalized.commonMisuse || null,
-      whyLearn,
-      prerequisite: getRelationTargetsByType(relations, "prerequisite"),
-      nextStep: getRelationTargetsByType(relations, "next_step"),
-      pairWith: getRelationTargetsByType(relations, "pair_with"),
-      practice: normalized.practice || null,
-      coordinates: atlasV2?.coordinates || { primary },
-      axisRationale: effectiveAxisRationale,
+      aliases: [aliasZh].filter(Boolean),
+      objectType: atlasV2?.objectType || category,
       definition: descriptionEn,
-      purpose: normalized.purpose || descriptionEn,
-      origin: normalized.origin || null,
-      relations,
-      confidence: atlasV2?.confidence ?? 1,
       status: evaluation?.stageA === "不纳入" ? "deprecated" : "active",
-      version: "v2.0.0"
+      version: "v2.0.0",
+
+      // Context & Boundaries
+      problemTarget: normalized.meceExtension?.problemTarget || normalized.problem || descriptionEn,
+      whenToUse: normalized.meceExtension?.whenToUse || normalized.whenToUse || normalized.purpose || descriptionEn,
+      limitations: normalized.meceExtension?.limitations || normalized.whenNotToUse || normalized.limitations || null,
+
+      // Execution & Operations
+      rules: Array.isArray(normalized.meceExtension?.rules) ? normalized.meceExtension.rules : (Array.isArray(normalized.rules) ? normalized.rules : []),
+      examples: normalized.meceExtension?.examples || normalized.examples || null,
+      commonMisuse: normalized.meceExtension?.commonMisuse || normalized.commonMisuse || null,
+      problemTargetEn: normalized.meceExtension?.problemTargetEn || normalized.problemEn || null,
+      whenToUseEn: normalized.meceExtension?.whenToUseEn || normalized.whenToUseEn || normalized.purposeEn || null,
+      limitationsEn: normalized.meceExtension?.limitationsEn || normalized.whenNotToUseEn || normalized.limitationsEn || null,
+      rulesEn: Array.isArray(normalized.meceExtension?.rulesEn) ? normalized.meceExtension.rulesEn : (Array.isArray(normalized.rulesEn) ? normalized.rulesEn : []),
+      examplesEn: normalized.meceExtension?.examplesEn || normalized.examplesEn || null,
+      commonMisuseEn: normalized.meceExtension?.commonMisuseEn || normalized.commonMisuseEn || null,
+
+      // Topology & Metadata
+      origin: normalized.origin || null,
+      evaluation,
+      coordinates: atlasV2?.coordinates || null,
+      axisRationale,
+      relations
     }
   };
 }

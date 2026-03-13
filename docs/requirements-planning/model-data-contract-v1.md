@@ -32,22 +32,45 @@
 
 ## 1.5 v2 运行时知识对象 (`window.COGNITIVE_ATLAS_OBJECTS`)
 
-在保留 legacy rows 兼容输入的同时，仓库现在会在 `data/model-library.js` 中构建显式知识对象数组，作为 Cognitive Atlas v2 的主运行时数据源。
+在保留 legacy rows 兼容输入的同时，仓库现在会在 `data/model-library.js` 中构建显式知识对象数组，作为 Cognitive Atlas v2 的主运行时数据源。所有对象遵循 4 个 MECE 维度的核心属性设计：
 
+### 维度 1：身份与本体 (Identity & Ontology)
+描述对象本身的基础客观属性。
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `id` | String | 规范化对象 ID，例如 `ca.framework.swot.v1` |
 | `name` | String | 英文标准名 |
-| `aliasZh` | String | 中文名称 |
-| `aliases` | String[] | 别名数组 |
-| `descriptionEn` | String | 英文定义 |
-| `category` | Enum | 兼容旧分组使用 |
-| `objectType` | Enum | v2 本体类型 |
+| `aliases` | String[] | 中文翻译及其他别名数组 |
+| `objectType` | Enum | v2 本体类型 (Theory, Principle, Framework 等) |
+| `definition` | String | 客观的权威一句话定义 |
+| `status` | Enum | 状态 (`active`, `deprecated`) |
+| `version` | String | 版本号 (`v2.0.0`) |
+
+### 维度 2：场景与边界 (Context & Boundaries)
+描述对象与外部场景的匹配关系，解决“何时用/解决什么问题”。
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `problemTarget` | String | 针对的核心痛点或要解决的具体问题 |
+| `whenToUse` | String | 最佳适用场景 |
+| `limitations` | String | 局限性与不适用场景（何时不用） |
+
+### 维度 3：执行与落地 (Execution & Operations)
+描述如何将该认知对象转化为具体行动。
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `rules` | String[] | 结构化规则、操作步骤或核心框架拆解 |
+| `examples` | String | 具体的应用示例或案例 |
+| `commonMisuse` | String | 落地执行时的常见误区或谬误 |
+
+### 维度 4：拓扑与元数据 (Topology & Metadata)
+系统赋予它的知识网络位置与引用图谱属性。
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `origin` | String | 提出者、出处或学科起源 |
 | `evaluation` | Object | 阶段A 准入结果 |
-| `atlasV2` | Object | 显式 v2 分类结果与主坐标 |
-| `purpose` | String | 用途说明 |
-| `references` | Object | 参考资源 |
-| `relations` | Array | 指向其他对象的关系边 |
+| `coordinates` | Object | 在 Atlas 中的三维体系落点 |
+| `axisRationale` | Object | 各轴落点的推导依据 |
+| `relations` | Array | 指向其他对象的关系边（动态检索替代硬编码的前置/相关属性） |
 
 ### 强制校验规则
 1. admitted 对象的 `atlasV2.classificationStatus` 必须为 `classified`。
