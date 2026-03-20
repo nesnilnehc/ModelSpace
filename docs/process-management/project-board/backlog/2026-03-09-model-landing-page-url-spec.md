@@ -1,10 +1,11 @@
 ---
 artifact_type: backlog-item
 created_by: capture-work-items
-lifecycle: living
+lifecycle: closed
 type: requirement
 date: 2026-03-09
-status: captured
+closed_date: 2026-03-20
+status: done
 source: plan
 trace_id: cognitive-atlas-landing-plan
 ---
@@ -17,10 +18,17 @@ trace_id: cognitive-atlas-landing-plan
 
 ## Acceptance Criteria
 
-- [ ] 每个认知对象具备稳定、可书签的 URL（如 /model/MECE 或 ?model=MECE）
-- [ ] 落地页展示完整定义、坐标、relations、references
-- [ ] URL 规范写入 docs/guides 或与 share-url-best-practices 统一
-- [ ] 与现有 url-state.js 兼容，支持叠加筛选/语言等参数
+- [x] 每个认知对象具备稳定、可书签的 URL（如 /model/MECE 或 ?model=MECE）
+- [x] 落地页展示完整定义、坐标、relations、references
+- [x] URL 规范写入 docs/guides 或与 share-url-best-practices 统一
+- [x] 与现有 url-state.js 兼容，支持叠加筛选/语言等参数
+
+## Verification (2026-03-20)
+
+- `url-state.js` 支持 `model`/`mo` 参数；`app.js` 初始化时应用 `landingModel` 聚焦并展开详情
+- 详情面板展示定义、坐标、relations、references
+- `docs/guides/share-url-best-practices.md` 已文档化模型落地页 URL 用法
+- 支持叠加 `l`、`embed`、`simple` 等参数
 
 ## Notes
 

@@ -31,6 +31,12 @@
 | `scripts/changelog-diff.mjs` | 从 `git diff data/model-library.js` 提取模型变更，生成 changelog 表格行。 |
 | `scripts/smoke-e2e.mjs` | 端到端回归脚本（本地静态服务 + Playwright）：覆盖语言、筛选、单元聚焦、相关模型跳转、URL 恢复、嵌入与导出。 |
 | `scripts/perf-budget.mjs` | 性能预算基线脚本（100+ 节点）：首屏耗时、平均 FPS、导出耗时。 |
+| `scripts/export-promo-image.mjs` | 推广图导出脚本：生成 README 用 cognitive-atlas-promo.png。 |
+| `scripts/export-douyin-card.mjs` | 抖音竖卡导出：9:16 单模型卡（名称、定义、坐标、CTA）。 |
+| `scripts/export-creator-script.mjs` | 创作者脚本模板导出：钩子→定义→例子→关联，含落地页 URL 占位符。 |
+| `scripts/generate-douyin-publish-guides.mjs` | 抖音发布指南批量生成脚本。 |
+| `scripts/generate-illustrations.mjs` | 插图批量生成脚本。 |
+| `scripts/verify-illustrations.mjs` | 插图验证脚本。 |
 
 ## 源码模块（`src/app3d`）
 
@@ -88,6 +94,8 @@
 | `docs/architecture/promo-export-flow.md` | README 推广图导出与更新流程。 |
 | `docs/calibration/2026-03-06-cognitive-loop.md` | 项目认知循环报告；治理周期诊断与推荐任务。 |
 | `docs/calibration/2026-03-09-cognitive-loop.md` | 2026-03-09 scope-change 认知循环报告；落地方案驱动治理更新。 |
+| `docs/calibration/2026-03-09-cognitive-loop-periodic-review.md` | 2026-03-09 定期复盘；文档就绪与执行对齐。 |
+| `docs/calibration/cognitive-loop.md` | 项目认知循环报告（living）；plan-next 输出。 |
 | `docs/calibration/2026-03-06-repair-loop-report.md` | 修复循环报告；自动化测试与缺陷修复记录。 |
 | `docs/calibration/2026-03-09-repair-loop-report.md` | 2026-03-09 修复循环报告；治理变更后 CI 全绿。 |
 
