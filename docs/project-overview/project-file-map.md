@@ -66,6 +66,7 @@
 | --- | --- |
 | `docs/project-overview/project-file-map.md` | 当前文档：项目逐文件职责清单。 |
 | `docs/project-overview/goals.md` | 项目目标：核心、战略、数据治理与非目标。 |
+| `docs/project-overview/strategic-goals.md` | 战略目标（design-strategic-goals）：5 项结果导向目标，对齐 vision/NSM。 |
 | `docs/process-management/backlog.md` | 从 roadmap 抽取的待办清单；支持 traceability 与 execution-alignment。 |
 | `docs/process-management/project-board/backlog/` | 结构化工作项（requirement/issue）；capture-work-items 输出目录。 |
 | `docs/changelog/model-library-changelog.md` | 模型库变更日志；按模型粒度记录新增/修改/删除。 |
@@ -75,6 +76,8 @@
 | `docs/requirements-planning/spreadable-cognitive-assets-requirements.md` | 可传播认知资产（抖音竖卡、脚本、落地页）与体系化学习需求。 |
 | `docs/designs/2026-03-05-iteration-roadmap.md` | 后续迭代路线设计草案（A/B/C 路线、阶段目标、验收标准）。 |
 | `docs/designs/2026-03-06-phase3-architecture-evolution.md` | Phase 3 分发深化 & 架构演进规划（可选方向与优先级）。 |
+| `docs/designs/2026-03-20-learning-path-sketches.md` | 学习路径草图：结构思维/Strategy/诊断三路径，节点+relations+缺口分析。 |
+| `docs/designs/2026-03-20-learning-strategy-goals.md` | 可学习维度策略目标：目标用户、策略目标 LS-1–5、成功指标、非目标、执行顺序。 |
 | `docs/architecture/README.md` | Architecture 文档索引；M1–M5 里程碑交付说明与追溯。 |
 | `docs/architecture/20260304-3d-visibility-redesign.md` | 3D 可见性改版设计文档（Proposed）。 |
 | `docs/architecture/20260304-model-details-ia-redesign.md` | 详情面板信息架构改版设计文档（Proposed）。 |

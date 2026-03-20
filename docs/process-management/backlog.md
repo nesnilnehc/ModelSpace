@@ -76,7 +76,7 @@
 | **1 todo** | 体系化学习 | 学习路径与练习设计 → 学习手册 Markdown 导出 | [Phase 3 规划](../designs/2026-03-06-phase3-architecture-evolution.md)：衔接落地页，形成学习闭环 |
 | 2 optional | 3D / 详情改版 | 可见性、信息架构优化 | Proposed，择机落地 |
 
-首项建议：**[学习路径与练习设计](project-board/backlog/2026-03-09-learning-path-practice-design.md)**（依赖完成后可启动学习手册导出）。
+首项建议：**[学习路径与练习设计](project-board/backlog/2026-03-09-learning-path-practice-design.md)**（依赖完成后可启动学习手册导出）。策略见 [2026-03-20 路径驱动收集快照](project-board/backlog/2026-03-20-snapshot-path-driven-collection.md)。
 
 ---
 
