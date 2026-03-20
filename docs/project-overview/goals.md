@@ -58,5 +58,6 @@ M5 已完成，见 [backlog](../process-management/backlog.md#m5-week-2变更可
 ## 参考
 
 - [Project File Map](./project-file-map.md)
+- [Strategic Goals](./strategic-goals.md) — 5 项战略目标（SG-1–5），对齐 vision/NSM
 - [Iteration Roadmap](../designs/2026-03-05-iteration-roadmap.md)
 - [M5 内容运营设计](../designs/2026-03-05-m5-content-operations.md)
