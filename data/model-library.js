@@ -572,6 +572,7 @@ window.COGNITIVE_ATLAS_RELATION_TYPES = [
 ];
 
 window.COGNITIVE_ATLAS_RELATIONS = [
+  // Existing relations
   { source: "Systems Thinking", type: "related", target: "Feedback Loop" },
   { source: "Systems Thinking", type: "related", target: "Leverage Points" },
   { source: "Systems Thinking", type: "related", target: "Flywheel" },
@@ -591,7 +592,28 @@ window.COGNITIVE_ATLAS_RELATIONS = [
   { source: "Game Theory", type: "related", target: "Nash Equilibrium" },
   { source: "Feedback Loop", type: "related", target: "PDCA" },
   { source: "Deliberate Practice", type: "pair_with", target: "Feynman Technique" },
-  { source: "Spaced Repetition", type: "pair_with", target: "Ebbinghaus Forgetting Curve" }
+  { source: "Spaced Repetition", type: "pair_with", target: "Ebbinghaus Forgetting Curve" },
+
+  // Learning path: 结构思维入门 (2026-03-20)
+  { source: "MECE", type: "prerequisite", target: "Issue Tree" },
+  { source: "MECE", type: "prerequisite", target: "5W1H" },
+  { source: "Issue Tree", type: "prerequisite", target: "5 Whys" },
+  { source: "Issue Tree", type: "next_step", target: "5 Whys" },
+  { source: "5 Whys", type: "next_step", target: "Fishbone Diagram" },
+
+  // Learning path: Strategy 入门 (2026-03-20)
+  { source: "SWOT", type: "prerequisite", target: "PESTLE" },
+  { source: "SWOT", type: "prerequisite", target: "Porter's Five Forces" },
+  { source: "SWOT", type: "prerequisite", target: "VRIO" },
+  { source: "PESTLE", type: "next_step", target: "Porter's Five Forces" },
+  { source: "Porter's Five Forces", type: "next_step", target: "Generic Strategies" },
+  { source: "Generic Strategies", type: "next_step", target: "OKR" },
+
+  // Learning path: 诊断/问题拆解 (2026-03-20)
+  { source: "5 Whys", type: "prerequisite", target: "Fishbone Diagram" },
+  { source: "Fishbone Diagram", type: "next_step", target: "FMEA" },
+  { source: "Fishbone Diagram", type: "next_step", target: "Red Teaming" },
+  { source: "FMEA", type: "pair_with", target: "Swiss Cheese Model" }
 ];
 
 /**
