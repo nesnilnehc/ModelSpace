@@ -65,8 +65,11 @@
 | 文件 | 作用 |
 | --- | --- |
 | `docs/project-overview/project-file-map.md` | 当前文档：项目逐文件职责清单。 |
-| `docs/project-overview/goals.md` | 项目目标：核心、战略、数据治理与非目标。 |
-| `docs/project-overview/strategic-goals.md` | 战略目标（design-strategic-goals）：5 项结果导向目标，对齐 vision/NSM。 |
+| `docs/project-overview/vision.md` | 愿景：认知公地与 2–5 年长期方向。 |
+| `docs/project-overview/mission.md` | 使命：根本目的与服务对象。 |
+| `docs/project-overview/north-star.md` | 北极星：人轴 / 机器轴双指标、支撑与反例、测量说明。 |
+| `docs/project-overview/goals.md` | 项目目标：三件套、数据治理与非目标；追溯愿景 / 使命 / 北极星 / 战略目标。 |
+| `docs/project-overview/strategic-goals.md` | 战略目标：SG-1–5，对齐愿景与双轴北极星。 |
 | `docs/process-management/backlog.md` | 从 roadmap 抽取的待办清单；支持 traceability 与 execution-alignment。 |
 | `docs/process-management/project-board/backlog/` | 结构化工作项（requirement/issue）；capture-work-items 输出目录。 |
 | `docs/changelog/model-library-changelog.md` | 模型库变更日志；按模型粒度记录新增/修改/删除。 |

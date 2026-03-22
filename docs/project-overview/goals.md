@@ -1,8 +1,8 @@
 # Cognitive Atlas 项目目标
 
-**Date:** 2026-03-06  
+**Date:** 2026-03-21  
 **Status:** Active  
-**Traceability:** [Backlog](../process-management/backlog.md) → [Roadmap](../designs/2026-03-05-iteration-roadmap.md)
+**Traceability:** [Vision](./vision.md) · [Mission](./mission.md) · [North Star](./north-star.md) · [Strategic goals](./strategic-goals.md) · [Backlog](../process-management/backlog.md) → [Roadmap](../designs/2026-03-05-iteration-roadmap.md)
 
 ---
 
@@ -58,6 +58,7 @@ M5 已完成，见 [backlog](../process-management/backlog.md#m5-week-2变更可
 ## 参考
 
 - [Project File Map](./project-file-map.md)
-- [Strategic Goals](./strategic-goals.md) — 5 项战略目标（SG-1–5），对齐 vision/NSM
+- [Vision](./vision.md) · [Mission](./mission.md) · [North Star](./north-star.md)
+- [Strategic Goals](./strategic-goals.md) — 5 项战略目标（SG-1–5），对齐愿景 / 双轴北极星
 - [Iteration Roadmap](../designs/2026-03-05-iteration-roadmap.md)
 - [M5 内容运营设计](../designs/2026-03-05-m5-content-operations.md)
