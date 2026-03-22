@@ -69,9 +69,12 @@ illustration:
 |------|------|------|
 | MECE | `docs/assets/illustrations/mece.svg` | 四方格非重叠分区，ME+CE 视觉隐喻 |
 | Fishbone Diagram | `docs/assets/illustrations/fishbone-diagram.svg` | Ishikawa 鱼骨图：鱼头（Effect）朝右，6 个对称的主分支原因向左分支 |
+| FMEA | `docs/assets/illustrations/fmea.svg` | 失效模式分析：Failure Mode → S×O×D=RPN → 防范措施；三因子（Severity / Occurrence / Detection）乘法流 |
 
 ### 预览
 
 MECE 插图：深色背景，中心方形被分为四块互不重叠的色块（青/橙/紫/灰），合起来覆盖整个方形，体现「相互独立、完全穷尽」。
 
 Fishbone 插图：深色背景，脊骨自左至右，鱼头（Effect）在右；包含 6 个对称的主干分类（Measurements, Environment, Materials, Methods, Personnel, Machines），从主脊骨向上下两侧延伸，带水平次枝干表示根因细分。结构对齐维基百科的标准 Ishikawa 布局。参考 [Ishikawa diagram - Wikipedia](https://en.wikipedia.org/wiki/Ishikawa_diagram)。
+
+FMEA 插图：深色背景，自上而下为「失效模式」→「S × O × D = RPN」公式流（严重度、发生度、探测度各 1–10 分制，相乘得 1–1000 的 RPN）→「针对高 RPN 制定防范措施」（防呆、冗余、检测预警）。参考 IEC 60812 与 FMEA 行业惯例。

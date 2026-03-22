@@ -445,8 +445,21 @@ bindAppInteractionEvents({
     },
     onExportDouyinCard: () => {
       const mesh = viewUiState.selectedMesh;
-      if (!mesh?.userData?.model) return;
-      exportDouyinCard(mesh.userData.model, undefined, viewUiState.uiLanguage);
+      if (!mesh?.userData?.model) {
+        const rect = exportDouyinCardBtn?.getBoundingClientRect();
+        const x = rect ? rect.left + rect.width / 2 : lastPointerClient.x;
+        const y = rect ? rect.top - 8 : rect?.top ?? lastPointerClient.y;
+        showTooltip(x, y, getUIText("exportDouyinCardHintText"));
+        setTimeout(() => hideTooltip(), 2000);
+        return;
+      }
+      exportDouyinCard(mesh.userData.model, undefined, viewUiState.uiLanguage).catch(() => {
+        const rect = exportDouyinCardBtn?.getBoundingClientRect();
+        const x = rect ? rect.left + rect.width / 2 : lastPointerClient.x;
+        const y = rect ? rect.top - 8 : rect?.top ?? lastPointerClient.y;
+        showTooltip(x, y, getUIText("exportDouyinCardErrorText"));
+        setTimeout(() => hideTooltip(), 2000);
+      });
     },
     onFullscreenToggle: () => {
       toggleFullscreen();
@@ -626,7 +639,9 @@ function isOverviewMode() {
 
 function updateViewControlsState() {
   if (exportDouyinCardBtn) {
-    exportDouyinCardBtn.disabled = !viewUiState.selectedMesh?.userData?.model;
+    const hasModel = !!viewUiState.selectedMesh?.userData?.model;
+    exportDouyinCardBtn.disabled = !hasModel;
+    exportDouyinCardBtn.title = hasModel ? "" : getUIText("exportDouyinCardHintText");
   }
   const overviewActive = isOverviewMode();
   if (overviewModeBtn) {

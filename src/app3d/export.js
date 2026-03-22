@@ -612,11 +612,11 @@ export function createExportService({
   }
 
   function exportDouyinCard(model, fileName, lang = "zh") {
-    getDouyinCardDataUrl(model, lang).then((dataUrl) => {
-    const anchor = document.createElement("a");
-    anchor.href = dataUrl;
-    anchor.download = fileName || `cognitive-atlas-douyin-${model.name}-${new Date().toISOString().slice(0, 10)}.png`;
-    anchor.click();
+    return getDouyinCardDataUrl(model, lang).then((dataUrl) => {
+      const anchor = document.createElement("a");
+      anchor.href = dataUrl;
+      anchor.download = fileName || `cognitive-atlas-douyin-${model.name}-${new Date().toISOString().slice(0, 10)}.png`;
+      anchor.click();
     });
   }
 
