@@ -1,10 +1,11 @@
 ---
 artifact_type: backlog-item
 created_by: capture-work-items
-lifecycle: living
+lifecycle: closed
 type: requirement
 date: 2026-03-09
-status: captured
+closed_date: 2026-03-20
+status: done
 source: plan
 trace_id: cognitive-atlas-landing-plan
 ---
@@ -26,3 +27,9 @@ trace_id: cognitive-atlas-landing-plan
 
 - 与创作者脚本模板、落地页 URL 规范配合使用
 - 放弃 cell 裁剪、主题海报作为主传播资产
+
+## Verification (2026-03-20)
+
+- `scripts/export-douyin-card.mjs` supports single-model 9:16 card export.
+- The top-level backlog marks Phase 3 D/E/G as complete.
+- Follow-up visual feedback was addressed in `fix(export): douyin card feedback; fix(illustration): FMEA redesign and centering`.
